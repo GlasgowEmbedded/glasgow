@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.control.clock
 
+.. autoclass:: ClockDrivePorts
+
 .. autoclass:: ClockDriveInterface

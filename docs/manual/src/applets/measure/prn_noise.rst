@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.measure.prn_noise
 
+.. autoclass:: PRNNoisePorts
+
 .. autoclass:: PRNNoiseInterface

@@ -7,7 +7,7 @@ from amaranth.lib.wiring import Out
 from amaranth.lib.cdc import FFSynchronizer
 
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
 
@@ -154,6 +154,20 @@ class VideoRGBInputRow:
     overflow: bool
 
 
+@glasgow_ports
+class VideoRGBInputPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """bus power (voltage reference of the inputs)"""
+    r: io.PortLike = GlasgowPin.field(power=supply, width=5)
+    """red data lines, from least to most significant bit"""
+    g: io.PortLike = GlasgowPin.field(power=supply, width=5)
+    """green data lines, from least to most significant bit"""
+    b: io.PortLike = GlasgowPin.field(power=supply, width=5)
+    """blue data lines, from least to most significant bit"""
+    dck: io.PortLike = GlasgowPin.field(power=supply)
+    """data clock"""
+
+
 class VideoRGBInputInterface:
     """Capture row headers from a parallel RGB555 LCD bus.
 
@@ -161,10 +175,8 @@ class VideoRGBInputInterface:
     during vertical blanking. Each color pin group is ordered from least to most significant bit.
     """
 
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 r: tuple[GlasgowPin, ...], g: tuple[GlasgowPin, ...],
-                 b: tuple[GlasgowPin, ...], dck: GlasgowPin,
-                 rows: int, columns: int, vblank: float):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: VideoRGBInputPorts, *, rows: int, columns: int, vblank: float):
         if not 1 <= rows <= 256:
             raise GlasgowAppletError("row count must be between 1 and 256")
         if columns < 1:
@@ -174,7 +186,7 @@ class VideoRGBInputInterface:
 
         component = assembly.add_submodule(VideoRGBInputComponent(
             rows=rows, columns=columns, vblank=vblank,
-            ports=assembly.add_port_group(r=r, g=g, b=b, dck=dck),
+            ports=ports,
             sys_clk_freq=1 / assembly.sys_clk_period,
         ))
         self._pipe = assembly.add_in_pipe(component.o_stream, fifo_depth=512 * 30)
@@ -205,11 +217,7 @@ class VideoRGBInputApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "r", width=5, required=True)
-        access.add_pins_argument(parser, "g", width=5, required=True)
-        access.add_pins_argument(parser, "b", width=5, required=True)
-        access.add_pins_argument(parser, "dck", required=True)
+        access.add_ports_arguments(parser, VideoRGBInputPorts)
         parser.add_argument("--rows", type=int, required=True,
             help="LCD row count")
         parser.add_argument("--columns", type=int, required=True,
@@ -219,9 +227,8 @@ class VideoRGBInputApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.video_rgb_iface = VideoRGBInputInterface(self.logger, self.assembly,
-                r=args.r, g=args.g, b=args.b, dck=args.dck,
+            ports = self.assembly.add_ports(VideoRGBInputPorts, args)
+            self.video_rgb_iface = VideoRGBInputInterface(self.logger, self.assembly, ports,
                 rows=args.rows, columns=args.columns, vblank=args.vblank)
 
     async def run(self, args):

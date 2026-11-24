@@ -1,7 +1,7 @@
 import struct
 
 from amaranth import *
-from amaranth.lib import enum, data, wiring, stream
+from amaranth.lib import enum, data, wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
@@ -9,7 +9,9 @@ from glasgow.support.logging import dump_hex
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.gateware.stream import StreamBuffer
 from glasgow.gateware.iostream import IOStreamer
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.gateware.ports import PortGroup
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
@@ -34,7 +36,7 @@ class JTAGXVCProbe(wiring.Component):
     divisor:  In(16)
 
     def __init__(self, ports, *, offset=None):
-        self._ports  = ports
+        self._ports  = PortGroup(tck=ports.tck, tms=ports.tms, tdi=ports.tdi, tdo=ports.tdo)
         self._offset = offset
 
         super().__init__()
@@ -96,13 +98,27 @@ class JTAGXVCProbe(wiring.Component):
         return m
 
 
+@glasgow_ports
+class JTAGXVCPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """target power (voltage reference of the interface)"""
+    tck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test clock"""
+    tms: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test mode select"""
+    tdi: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test data in"""
+    tdo: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """test data out"""
+
+
 class JTAGXVCComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
     divisor:  In(16)
 
-    def __init__(self, ports):
+    def __init__(self, ports: JTAGXVCPorts):
         self._ports = ports
 
         super().__init__()
@@ -161,12 +177,10 @@ class JTAGXVCComponent(wiring.Component):
 
 
 class JTAGXVCInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *, tck: GlasgowPin,
-                 tms: GlasgowPin, tdi: GlasgowPin, tdo: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, ports: JTAGXVCPorts):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(tck=tck, tms=tms, tdi=tdi, tdo=tdo)
         component = assembly.add_submodule(JTAGXVCComponent(ports))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._clock = assembly.add_clock_divisor(component.divisor,
@@ -211,17 +225,12 @@ class JTAGXVCApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "tck", required=True, default=True)
-        access.add_pins_argument(parser, "tms", required=True, default=True)
-        access.add_pins_argument(parser, "tdi", required=True, default=True)
-        access.add_pins_argument(parser, "tdo", required=True, default=True)
+        access.add_ports_arguments(parser, JTAGXVCPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.xvc_iface = JTAGXVCInterface(self.logger, self.assembly,
-                tck=args.tck, tms=args.tms, tdi=args.tdi, tdo=args.tdo)
+            ports = self.assembly.add_ports(JTAGXVCPorts, args)
+            self.xvc_iface = JTAGXVCInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_run_arguments(cls, parser):

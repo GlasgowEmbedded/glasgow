@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.audio.dac
 
+.. autoclass:: AudioDACPorts
+
 .. autoclass:: AudioDACInterface

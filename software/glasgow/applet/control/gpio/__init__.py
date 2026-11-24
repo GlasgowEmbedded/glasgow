@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from collections.abc import Sequence
 from typing import Literal, Self
 
 from amaranth import *
@@ -7,12 +8,12 @@ from amaranth.lib import wiring, io, cdc
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, PullState
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, PullState, glasgow_ports
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2, GlasgowPin
 from glasgow.support.endpoint import ServerEndpoint, endpoint
 
 
-__all__ = ["GPIOException", "GPIOComponent", "GPIOInterface"]
+__all__ = ["GPIOException", "GPIOComponent", "ControlGPIOPorts", "GPIOInterface"]
 
 
 class GPIOException(GlasgowAppletError):
@@ -42,16 +43,34 @@ class GPIOComponent(wiring.Component):
         return m
 
 
+@glasgow_ports
+class ControlGPIOPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """pin power"""
+    pins: io.PortLike = GlasgowPin.field(power=supply, width=range(1, 33))
+    """pins to sample and drive"""
+
+
 class GPIOInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 pins: tuple[GlasgowPin], name="gpio"):
+    """Sample and drive the pins of a port.
+
+    :py:`port` is a port of any width; pin :py:`0` is its first pin. Use it with, for example,
+    the :py:`pins` of an :py:`ControlGPIOPorts`, or a single-pin field of another applet's ports.
+
+    :py:`pins` optionally lists the pins that make up :py:`port`, in order. It is required to
+    change pulls at runtime with :meth:`pull`; pulls that are fixed for the applet are better
+    declared with :py:`pull=` on the field.
+    """
+
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, port: io.PortLike, *,
+                 pins: Sequence[GlasgowPin] | None = None):
         self._logger   = logger
         self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._assembly = assembly
         self._pins     = pins
+        self._count    = len(port)
 
-        port_pins = pins[0] if len(pins) == 1 else pins
-        component = assembly.add_submodule(GPIOComponent(assembly.add_port(port_pins, name=name)))
+        component = assembly.add_submodule(GPIOComponent(port))
         self._i   = assembly.add_ro_register(component.i)
         self._o   = assembly.add_rw_register(component.o)
         self._oe  = assembly.add_rw_register(component.oe)
@@ -62,14 +81,23 @@ class GPIOInterface:
     @property
     def count(self) -> int:
         """Number of pins."""
-        return len(self._pins)
+        return self._count
 
     def _check_index(self, index: int):
         if index not in range(self.count):
             raise IndexError(f"pin {index} out of range [0,{self.count})")
 
     async def pull(self, index: int, state: PullState | str):
-        """Configure pull-up or pull-down for pin :py:`index`."""
+        """Configure pull-up or pull-down for pin :py:`index`.
+
+        Raises
+        ------
+        GPIOException
+            If the interface was constructed without :py:`pins`.
+        """
+        self._check_index(index)
+        if self._pins is None:
+            raise GPIOException("pulls can only be configured if the pins are known")
         self._assembly.use_pulls({self._pins[index]: state})
         await self._assembly.configure_ports()
 
@@ -207,13 +235,13 @@ class ControlGPIOApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "pins", width=range(1, 33), required=True)
+        access.add_ports_arguments(parser, ControlGPIOPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.gpio_iface = GPIOInterface(self.logger, self.assembly, pins=args.pins)
+            ports = self.assembly.add_ports(ControlGPIOPorts, args)
+            self.gpio_iface = GPIOInterface(self.logger, self.assembly, ports.pins,
+                pins=args.pins)
 
     @classmethod
     def add_run_arguments(cls, parser):

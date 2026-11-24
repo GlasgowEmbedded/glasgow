@@ -19,4 +19,6 @@ API reference
 
 .. autoclass:: MAX31855Sample
 
+.. autoclass:: SensorMAX31855Ports
+
 .. autoclass:: SensorMAX31855Interface

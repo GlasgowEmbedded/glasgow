@@ -5,6 +5,7 @@ from amaranth import *
 from amaranth.lib import enum, data, io
 
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.gateware import pll
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
@@ -109,8 +110,25 @@ class VGAOutputGenerator(Elaboratable):
         return m
 
 
+@glasgow_ports
+class VGAOutputPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """output power (voltage reference of the outputs)"""
+    hs: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """horizontal sync"""
+    vs: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """vertical sync"""
+    r: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """red"""
+    g: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """green"""
+    b: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """blue"""
+
+
 class VGAOutputComponent(Elaboratable):
-    def __init__(self, ports, modeline, pix_clk_freq, test_pattern=VGATestPattern.Quilt):
+    def __init__(self, ports: VGAOutputPorts, modeline, pix_clk_freq,
+                 test_pattern=VGATestPattern.Quilt):
         self.ports = ports
         self.modeline = modeline
         self.pix_clk_freq = pix_clk_freq
@@ -161,13 +179,7 @@ class VGAOutputApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        access.add_pins_argument(parser, "hs", default=True)
-        access.add_pins_argument(parser, "vs", default=True)
-        access.add_pins_argument(parser, "r", default=True)
-        access.add_pins_argument(parser, "g", default=True)
-        access.add_pins_argument(parser, "b", default=True)
+        access.add_ports_arguments(parser, VGAOutputPorts)
 
         p_refresh = parser.add_mutually_exclusive_group()
         p_refresh.add_argument(
@@ -250,15 +262,8 @@ class VGAOutputApplet(GlasgowAppletV2):
             args.h_active, args.v_active, refresh_rate, pix_clk_freq / 1e6)
 
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
             self.assembly.add_submodule(VGAOutputComponent(
-                ports=self.assembly.add_port_group(
-                    hs=args.hs,
-                    vs=args.vs,
-                    r=args.r,
-                    g=args.g,
-                    b=args.b,
-                ),
+                ports=self.assembly.add_ports(VGAOutputPorts, args),
                 modeline=modeline,
                 pix_clk_freq=pix_clk_freq,
                 test_pattern=args.pattern,

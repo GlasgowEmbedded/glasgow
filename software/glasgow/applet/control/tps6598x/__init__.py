@@ -1,5 +1,6 @@
 from glasgow.support import logging
-from glasgow.applet.interface.i2c_controller import I2CNotAcknowledged, I2CControllerInterface
+from glasgow.applet.interface.i2c_controller import (
+    I2CNotAcknowledged, I2CControllerPorts, I2CControllerInterface)
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -46,9 +47,7 @@ class ControlTPS6598xApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "scl", default=True, required=True)
-        access.add_pins_argument(parser, "sda", default=True, required=True)
+        access.add_ports_arguments(parser, I2CControllerPorts)
 
         def i2c_address(arg):
             return int(arg, 0)
@@ -58,9 +57,8 @@ class ControlTPS6598xApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.i2c_iface = I2CControllerInterface(self.logger, self.assembly,
-                scl=args.scl, sda=args.sda)
+            ports = self.assembly.add_ports(I2CControllerPorts, args)
+            self.i2c_iface = I2CControllerInterface(self.logger, self.assembly, ports)
             self.tps6598x_iface = TPS6598xInterface(self.logger, self.i2c_iface, args.i2c_address)
 
     async def setup(self, args):

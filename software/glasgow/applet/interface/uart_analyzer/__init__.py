@@ -1,3 +1,5 @@
+import operator
+from functools import reduce
 import re
 import sys
 import argparse
@@ -5,12 +7,14 @@ import argparse
 from amaranth import *
 from amaranth.lib import enum, data, wiring, stream
 from amaranth.lib.wiring import In, Out
+from amaranth.lib import io
 
 from glasgow.support import logging
 from glasgow.gateware.ports import PortGroup
 from glasgow.gateware.uart import UART
 from glasgow.gateware.stream import Queue
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 
 
@@ -84,16 +88,28 @@ class UARTAnalyzerComponent(wiring.Component):
         return m
 
 
+@glasgow_ports
+class UARTAnalyzerPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """bus power (voltage reference of the inputs)"""
+    rx: io.PortLike | None = GlasgowPin.field(power=supply, default=True, pull="high")
+    """receive channel"""
+    tx: io.PortLike | None = GlasgowPin.field(power=supply, default=True, pull="high")
+    """transmit channel"""
+
+
 class UARTAnalyzerInterface:
     def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
-                 channels: dict[str, GlasgowPin | None], parity="none"):
+                 ports: UARTAnalyzerPorts, parity="none"):
         self._logger   = logger
         self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
-        self._channels = [channel for channel, pin in channels.items() if pin is not None]
-        self._pins     = tuple(channels[name] for name in self._channels)
+        channels = {name: port for name, port in (("rx", ports.rx), ("tx", ports.tx))
+                    if port is not None}
+        if not channels:
+            raise ValueError("at least one of the rx and tx channels must be connected")
+        self._channels = list(channels)
 
-        assembly.use_pulls({self._pins: "high"})
-        port = assembly.add_port(self._pins, name="uart")
+        port = reduce(operator.add, channels.values())
         component = assembly.add_submodule(UARTAnalyzerComponent(port, parity=parity))
         self._pipe = assembly.add_in_pipe(component.o_stream)
         self._periods = [assembly.add_clock_divisor(period, ref_period=assembly.sys_clk_period,
@@ -179,9 +195,7 @@ class UARTAnalyzerApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "rx", default=True)
-        access.add_pins_argument(parser, "tx", default=True)
+        access.add_ports_arguments(parser, UARTAnalyzerPorts)
         parser.add_argument(
             "--parity", metavar="PARITY",
             choices=("none", "zero", "one", "odd", "even"), default="none",
@@ -189,9 +203,9 @@ class UARTAnalyzerApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.uart_analyzer_iface = UARTAnalyzerInterface(self.logger, self.assembly,
-                channels={"rx": args.rx, "tx": args.tx}, parity=args.parity)
+            ports = self.assembly.add_ports(UARTAnalyzerPorts, args)
+            self.uart_analyzer_iface = UARTAnalyzerInterface(self.logger, self.assembly, ports,
+                parity=args.parity)
 
     @classmethod
     def add_setup_arguments(cls, parser):

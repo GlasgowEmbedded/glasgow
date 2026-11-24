@@ -17,4 +17,6 @@ API reference
 
 .. autoexception:: HX711Error
 
+.. autoclass:: SensorHX711Ports
+
 .. autoclass:: SensorHX711Interface

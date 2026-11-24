@@ -19,4 +19,6 @@ API reference
 
     .. autoenum:: glasgow.applet.interface.swd_probe::SWDProbeException.Kind
 
+.. autoclass:: SWDProbePorts
+
 .. autoclass:: SWDProbeInterface

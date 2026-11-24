@@ -3,6 +3,7 @@ import argparse
 import re
 
 from amaranth import *
+from amaranth.lib.io import PortLike
 
 from glasgow.support import logging
 from glasgow.support.logging import dump_hex
@@ -11,12 +12,13 @@ from glasgow.database.jedec import jedec_mfg_name_from_bytes
 from glasgow.support.progress import Progress
 from glasgow.protocol.sfdp import \
     SFDPCollection, SFDPJEDECFlashParametersTable, SFDPJEDECQuadEnableRequirements
-from glasgow.abstract import GlasgowPin
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
-from glasgow.applet.interface.qspi_controller import QSPIControllerInterface, QSPIControllerApplet
+from glasgow.applet.interface.qspi_controller import (QSPIControllerInterface, QSPIControllerPorts,
+    QSPIControllerApplet)
 
 
-__all__ = ["Memory25QError", "Memory25QVerifyError", "Memory25QInterface"]
+__all__ = ["Memory25QError", "Memory25QVerifyError", "Memory25QPorts", "Memory25QInterface"]
 
 
 class Memory25QError(GlasgowAppletError):
@@ -27,8 +29,24 @@ class Memory25QVerifyError(Memory25QError):
     pass
 
 
+@glasgow_ports
+class Memory25QPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """memory power"""
+    cs: PortLike = GlasgowPin.field(power=supply, default=True)
+    """chip select"""
+    sck: PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    io: PortLike = GlasgowPin.field(power=supply, width=4, default=True, pull="high",
+        help="applet I/O lines 'copi', 'cipo', 'wp', 'hold'")
+    """data lines; pulled up, so that WP# and HOLD# are inactive in SPI mode"""
+
+
 class Memory25QInterface:
-    """Make sure to call :meth:`initialize` first."""
+    """Make sure to call :meth:`initialize` first.
+
+    :py:`ports` is a :py:`Memory25QPorts`.
+    """
 
     qspi: QSPIControllerInterface
     """Underlying QSPI interface."""
@@ -53,12 +71,12 @@ class Memory25QInterface:
     parameters, :py:`False` otherwise.
     """
 
-    def __init__(self, logger: logging.Logger, assembly, *,
-            cs: GlasgowPin, sck: GlasgowPin, io: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly, ports: Memory25QPorts):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        self.qspi = QSPIControllerInterface(logger, assembly, cs=cs, sck=sck, io=io)
+        self.qspi = QSPIControllerInterface(logger, assembly,
+            QSPIControllerPorts(supply=ports.supply, cs=ports.cs, sck=ports.sck, io=ports.io))
         self.cmds = nor.CommandSet()
         self.sfdp = None
         self.sfdp_used = False
@@ -558,19 +576,17 @@ class Memory25QApplet(GlasgowAppletV2):
     required_revision = QSPIControllerApplet.required_revision
     m25q_iface: Memory25QInterface
 
+    ports_cls = Memory25QPorts
+    """Pins and supply of the applet; subclasses may extend them (see :py:`glasgow_ports`)."""
+
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "cs",  required=True, default=True)
-        access.add_pins_argument(parser, "sck", required=True, default=True)
-        access.add_pins_argument(parser, "io",  required=True, default=True, width=4,
-            help="bind the applet I/O lines 'copi', 'cipo', 'wp', 'hold' to PINS")
+        access.add_ports_arguments(parser, cls.ports_cls)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.m25q_iface = Memory25QInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, io=args.io)
+            self.ports = self.assembly.add_ports(self.ports_cls, args)
+            self.m25q_iface = Memory25QInterface(self.logger, self.assembly, self.ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

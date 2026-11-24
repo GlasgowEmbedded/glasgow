@@ -221,7 +221,8 @@ class SimulationAssembly(AbstractAssembly):
     def add_testbench(self, constructor, *, background=False):
         self._benches.append((constructor, background))
 
-    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio):
+    def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio, *,
+                         limits: tuple[float, float] | None = None):
         pass
 
     def set_pin_pull(self, pin: GlasgowPin, state: PullState):

@@ -4,12 +4,13 @@ import argparse
 from amaranth import *
 from amaranth.lib import data, wiring, stream, io, cdc
 from amaranth.lib.wiring import Out
+from amaranth.lib.io import PortLike
 
 from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.gateware.stream import AsyncQueue
 from glasgow.gateware import cobs
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
@@ -119,12 +120,25 @@ class QSPIAnalyzerFrontend(wiring.Component):
         return m
 
 
+@glasgow_ports
+class QSPIAnalyzerPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """bus power (voltage reference of the inputs)"""
+    cs: PortLike = GlasgowPin.field(power=supply, default=True, pull="high")
+    """chip select"""
+    sck: PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    io: PortLike = GlasgowPin.field(power=supply, width=range(2, 6, 2), default=4,
+        help="applet I/O lines 'copi', 'cipo', 'wp', 'hold'")
+    """data lines"""
+
+
 class QSPIAnalyzerComponent(wiring.Component):
     o_stream: Out(stream.Signature(8))
 
     overflow: Out(1)
 
-    def __init__(self, ports, buffer_size: int):
+    def __init__(self, ports: QSPIAnalyzerPorts, buffer_size: int):
         self._ports = ports
         self._buffer_size = buffer_size
 
@@ -166,12 +180,11 @@ class QSPIAnalyzerComponent(wiring.Component):
 
 
 class QSPIAnalyzerInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 cs: GlasgowPin, sck: GlasgowPin, io: GlasgowPin, buffer_size=512):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: QSPIAnalyzerPorts, *, buffer_size=512):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(cs=cs, sck=sck, io=io)
         component = assembly.add_submodule(QSPIAnalyzerComponent(ports, buffer_size))
         # Don't use an interface FIFO; the input buffering is done in the COBS encoder.
         self._pipe = assembly.add_in_pipe(component.o_stream, fifo_depth=0)
@@ -233,21 +246,15 @@ class QSPIAnalyzerApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "cs",  required=True, default=True)
-        access.add_pins_argument(parser, "sck", required=True, default=True)
-        access.add_pins_argument(parser, "io",  required=True, width=range(2, 6, 2), default=4,
-            help="bind the applet I/O lines 'copi', 'cipo', 'wp', 'hold' to PINS")
+        access.add_ports_arguments(parser, QSPIAnalyzerPorts)
         parser.add_argument(
             "--buffer-size", metavar="BYTES", type=int, default=16384,
             help="set FPGA trace buffer size to BYTES (must be power of 2, default: %(default)s)")
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.assembly.use_pulls({args.cs: "high"})
-            self.qspi_analyzer_iface = QSPIAnalyzerInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, io=args.io,
+            ports = self.assembly.add_ports(QSPIAnalyzerPorts, args)
+            self.qspi_analyzer_iface = QSPIAnalyzerInterface(self.logger, self.assembly, ports,
                 buffer_size=args.buffer_size)
 
     @classmethod

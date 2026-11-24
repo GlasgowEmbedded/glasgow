@@ -20,10 +20,12 @@ import argparse
 import asyncio
 import enum
 
+from amaranth.lib import io
+
 from glasgow.support import logging
 from glasgow.support.logging import dump_hex
-from glasgow.abstract import AbstractAssembly, GlasgowPin
-from glasgow.applet.interface.uart import UARTInterface
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
+from glasgow.applet.interface.uart import UARTInterface, UARTPorts
 from glasgow.applet.control.gpio import GPIOInterface
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
@@ -72,21 +74,35 @@ class M16CBootloaderError(GlasgowAppletError):
     pass
 
 
+@glasgow_ports
+class ProgramM16CPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """microcomputer power"""
+    rx: io.PortLike = GlasgowPin.field(power=supply, default=True, pull="high")
+    """receive (data from the microcomputer)"""
+    tx: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """transmit (data to the microcomputer)"""
+    reset: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
+    """microcomputer reset"""
+    cnvss: io.PortLike | None = GlasgowPin.field(power=supply)
+    """bootloader mode select (CNVSS)"""
+    # There's also active low bootloader enable (MODE), but it is not implemented for now.
+
+
 class ProgramM16CInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 rx: GlasgowPin, tx: GlasgowPin,
-                 reset: GlasgowPin | None = None, cnvss: GlasgowPin | None = None,
-                 timeout: float = 1.0):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: ProgramM16CPorts, *, timeout: float = 1.0):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        self._uart_iface = UARTInterface(logger, assembly, rx=rx, tx=tx)
-        if reset is not None:
-            self._reset_iface = GPIOInterface(logger, assembly, pins=(reset,), name="reset")
+        self._uart_iface = UARTInterface(logger, assembly,
+            UARTPorts(supply=ports.supply, rx=ports.rx, tx=ports.tx))
+        if ports.reset is not None:
+            self._reset_iface = GPIOInterface(logger, assembly, ports.reset)
         else:
             self._reset_iface = None
-        if cnvss is not None:
-            self._cnvss_iface = GPIOInterface(logger, assembly, pins=(cnvss,), name="cnvss")
+        if ports.cnvss is not None:
+            self._cnvss_iface = GPIOInterface(logger, assembly, ports.cnvss)
         else:
             self._cnvss_iface = None
         # There's also active low bootloader enable (MODE), but I'm not sure which chips use that,
@@ -308,18 +324,12 @@ class ProgramM16CApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "rx", required=True, default=True)
-        access.add_pins_argument(parser, "tx", required=True, default=True)
-        access.add_pins_argument(parser, "reset", default=True)
-        access.add_pins_argument(parser, "cnvss")
-        # access.add_pins_argument(parser, "mode")
+        access.add_ports_arguments(parser, ProgramM16CPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.m16c_iface = ProgramM16CInterface(self.logger, self.assembly,
-                rx=args.rx, tx=args.tx, reset=args.reset, cnvss=args.cnvss)
+            ports = self.assembly.add_ports(ProgramM16CPorts, args)
+            self.m16c_iface = ProgramM16CInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_run_arguments(cls, parser):

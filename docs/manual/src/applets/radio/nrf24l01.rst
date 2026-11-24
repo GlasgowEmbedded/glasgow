@@ -12,4 +12,6 @@ API reference
 
 .. autoexception:: glasgow.applet.radio.nrf24l01.RadioNRF24L01Error
 
+.. autoclass:: glasgow.applet.radio.nrf24l01.RadioNRF24L01Ports
+
 .. autoclass:: glasgow.applet.radio.nrf24l01.RadioNRF24L01Interface

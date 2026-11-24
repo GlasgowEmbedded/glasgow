@@ -10,11 +10,14 @@ from amaranth.lib.wiring import In, Out
 from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.gateware import spi
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.gateware.ports import PortGroup
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
 from glasgow.applet import GlasgowAppletV2
 
 
-__all__ = ["SPIControllerError", "SPIControllerComponent", "SPIControllerInterface"]
+__all__ = ["SPIControllerError", "SPIControllerComponent", "SPIControllerPorts",
+           "SPIControllerInterface"]
 
 
 class SPIControllerError(Exception):
@@ -29,14 +32,29 @@ class SPICommand(enum.Enum, shape=4):
     Sync     = 4
 
 
+@glasgow_ports
+class SPIControllerPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """bus power"""
+    cs: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
+    """chip select"""
+    sck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    copi: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
+    """controller out, peripheral in"""
+    cipo: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
+    """controller in, peripheral out"""
+
+
 class SPIControllerComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
     divisor:  In(16)
 
-    def __init__(self, ports, *, offset=None, us_cycles):
-        self._ports     = ports
+    def __init__(self, ports: SPIControllerPorts, *, offset=None, us_cycles):
+        # Unconnected ports are filled in below, so this must not be the caller's object.
+        self._ports     = PortGroup(cs=ports.cs, sck=ports.sck, copi=ports.copi, cipo=ports.cipo)
         self._offset    = offset
         self._us_cycles = us_cycles
 
@@ -156,15 +174,20 @@ class SPIControllerComponent(wiring.Component):
 
 
 class SPIControllerInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 cs: GlasgowPin | None = None, sck: GlasgowPin,
-                 copi: GlasgowPin | None = None, cipo: GlasgowPin | None = None,
+    """SPI controller.
+
+    :py:`ports` is an :py:`SPIControllerPorts`; :py:`cs`, :py:`copi`, and :py:`cipo` may be
+    :py:`None`.
+    """
+
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: SPIControllerPorts, *,
                  mode: spi.Mode | Literal[0, 1, 2, 3] = spi.Mode.IdleLow_SampleRising):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        ports = assembly.add_port_group(cs=cs, sck=sck, copi=copi, cipo=cipo)
-        component = assembly.add_submodule(SPIControllerComponent(ports,
+        component = assembly.add_submodule(SPIControllerComponent(
+            ports,
             us_cycles=int(1 / (assembly.sys_clk_period * 1_000_000))))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream)
         self._clock = assembly.add_clock_divisor(component.divisor,
@@ -375,17 +398,12 @@ class SPIControllerApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "cs",   default=True, required=True)
-        access.add_pins_argument(parser, "sck",  default=True, required=True)
-        access.add_pins_argument(parser, "copi", default=True)
-        access.add_pins_argument(parser, "cipo", default=True)
+        access.add_ports_arguments(parser, SPIControllerPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo)
+            ports = self.assembly.add_ports(SPIControllerPorts, args)
+            self.spi_iface = SPIControllerInterface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

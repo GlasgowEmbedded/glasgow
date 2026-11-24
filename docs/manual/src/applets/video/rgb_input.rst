@@ -33,4 +33,6 @@ API reference
 
 .. autoclass:: VideoRGBInputRow
 
+.. autoclass:: VideoRGBInputPorts
+
 .. autoclass:: VideoRGBInputInterface

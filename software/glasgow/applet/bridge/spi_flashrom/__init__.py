@@ -1,8 +1,11 @@
+from amaranth.lib import io
+
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2
 from glasgow.support.endpoint import ServerEndpoint
 from glasgow.protocol.flashrom import SerprogBus, SerprogCommand
-from glasgow.applet.interface.spi_controller import SPIControllerInterface
+from glasgow.applet.interface.spi_controller import SPIControllerInterface, SPIControllerPorts
 
 
 __all__ = []
@@ -97,6 +100,24 @@ class SerprogCommandHandler:
             await self.nak()
 
 
+@glasgow_ports
+class SPIFlashromPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """flash chip power"""
+    cs: io.PortLike = GlasgowPin.field(power=supply, default="A5")
+    """chip select"""
+    sck: io.PortLike = GlasgowPin.field(power=supply, default="A1")
+    """serial clock"""
+    copi: io.PortLike = GlasgowPin.field(power=supply, default="A2")
+    """controller out, peripheral in"""
+    cipo: io.PortLike = GlasgowPin.field(power=supply, default="A4")
+    """controller in, peripheral out"""
+    wp: io.PortLike | None = GlasgowPin.field(power=supply, default="A3", invert=True, pull="low")
+    """write protect (active low), pulled inactive"""
+    hold: io.PortLike | None = GlasgowPin.field(power=supply, default="A0", invert=True, pull="low")
+    """hold (active low), pulled inactive"""
+
+
 class SPIFlashromApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "expose SPI via flashrom serprog interface"
@@ -122,23 +143,14 @@ class SPIFlashromApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "cs",   default="A5", required=True)
-        access.add_pins_argument(parser, "sck",  default="A1", required=True)
-        access.add_pins_argument(parser, "copi", default="A2", required=True)
-        access.add_pins_argument(parser, "cipo", default="A4", required=True)
-        access.add_pins_argument(parser, "wp",   default="A3")
-        access.add_pins_argument(parser, "hold", default="A0")
+        access.add_ports_arguments(parser, SPIFlashromPorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
+            ports = self.assembly.add_ports(SPIFlashromPorts, args)
             self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo)
-            if args.wp:
-                self.assembly.use_pulls({~args.wp:   "low"})
-            if args.hold:
-                self.assembly.use_pulls({~args.hold: "low"})
+                SPIControllerPorts(supply=ports.supply, cs=ports.cs, sck=ports.sck,
+                                   copi=ports.copi, cipo=ports.cipo))
 
     @classmethod
     def add_setup_arguments(cls, parser):

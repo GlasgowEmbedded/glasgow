@@ -13,6 +13,10 @@ CLI reference
 API reference
 -------------
 
+.. module:: glasgow.applet.interface.jtag_probe
+
+.. autoclass:: JTAGProbePorts
+
 .. todo::
 
     Add API documentation for ``jtag-probe``.

@@ -6,9 +6,12 @@
 import struct
 from dataclasses import astuple, dataclass
 
+from amaranth.lib import io
+
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.support.data_logger import DataLogger
-from glasgow.applet.interface.uart import UARTInterface
+from glasgow.applet.interface.uart import UARTInterface, UARTPorts
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
@@ -67,6 +70,16 @@ class PMSx003Interface:
         return sample
 
 
+@glasgow_ports
+class SensorPMSx003Ports:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """sensor power"""
+    rx: io.PortLike = GlasgowPin.field(power=supply, default=True, pull="high")
+    """receive (data from the sensor)"""
+    tx: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
+    """transmit (data to the sensor)"""
+
+
 class SensorPMSx003Applet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "measure air quality with Plantower PMx003 sensors"
@@ -78,15 +91,13 @@ class SensorPMSx003Applet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "rx", default=True, required=True)
-        access.add_pins_argument(parser, "tx", default=True)
+        access.add_ports_arguments(parser, SensorPMSx003Ports)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
+            ports = self.assembly.add_ports(SensorPMSx003Ports, args)
             self.uart_iface = UARTInterface(self.logger, self.assembly,
-                rx=args.rx, tx=args.tx)
+                UARTPorts(supply=ports.supply, rx=ports.rx, tx=ports.tx))
             self.pmsx003_iface = PMSx003Interface(self.logger, self.uart_iface)
 
     async def setup(self, args):

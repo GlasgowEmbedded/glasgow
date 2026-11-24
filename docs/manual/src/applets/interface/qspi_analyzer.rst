@@ -17,4 +17,6 @@ API reference
 
 .. autoexception:: QSPIAnalyzerOverflow
 
+.. autoclass:: QSPIAnalyzerPorts
+
 .. autoclass:: QSPIAnalyzerInterface

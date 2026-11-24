@@ -37,6 +37,7 @@ from amaranth.lib.cdc import FFSynchronizer
 from amaranth.lib.wiring import In
 
 from glasgow.support import logging
+from glasgow.abstract import GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.gateware import pll
 from glasgow.applet import GlasgowAppletV2
 
@@ -237,6 +238,14 @@ class PRNNoiseInterface:
         await self._pipe.flush()
 
 
+@glasgow_ports
+class PRNNoisePorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """output power (voltage reference of the output)"""
+    out: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """noise output"""
+
+
 class GeneratePRNNoiseApplet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help   = "384 Mcps PRN noise source for RF filter characterisation"
@@ -271,13 +280,11 @@ class GeneratePRNNoiseApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "out", required=True, default=True)
+        access.add_ports_arguments(parser, PRNNoisePorts)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            out_port = self.assembly.add_port(args.out, name="out")
+            out_port = self.assembly.add_ports(PRNNoisePorts, args).out
             sys_clk_freq = round(1 / self.assembly.sys_clk_period)
             component = self.assembly.add_submodule(
                 PRNNoiseComponent(out_port=out_port, sys_clk_freq=sys_clk_freq))

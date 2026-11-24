@@ -4,33 +4,55 @@
 import asyncio
 import argparse
 
+from amaranth.lib import io
+
 from glasgow.support import logging
 from glasgow.support.logging import dump_hex
 from glasgow.arch.nrf24l import *
 from glasgow.arch.nrf24l.rf import *
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
-from glasgow.applet.interface.spi_controller import SPIControllerInterface
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
+from glasgow.applet.interface.spi_controller import SPIControllerInterface, SPIControllerPorts
 from glasgow.applet.control.gpio import GPIOInterface
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
 
 
-__all__ = ["RadioNRF24L01Error", "RadioNRF24L01Interface"]
+__all__ = ["RadioNRF24L01Error", "RadioNRF24L01Ports", "RadioNRF24L01Interface"]
 
 
 class RadioNRF24L01Error(GlasgowAppletError):
     pass
 
 
+@glasgow_ports
+class RadioNRF24L01Ports:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """radio power"""
+    # Order matches the pin order, in clockwise direction.
+    ce: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """chip enable"""
+    cs: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """chip select"""
+    sck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    copi: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """controller out, peripheral in"""
+    cipo: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """controller in, peripheral out"""
+    irq: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
+    """interrupt request (not used by the applet yet)"""
+
+
 class RadioNRF24L01Interface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin, cipo: GlasgowPin,
-                 ce: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: RadioNRF24L01Ports):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         self._spi_iface = SPIControllerInterface(logger, assembly,
-            cs=cs, sck=sck, copi=copi, cipo=cipo, mode=0)
-        self._ce_iface = GPIOInterface(logger, assembly, pins=(ce,))
+            SPIControllerPorts(supply=ports.supply, cs=ports.cs, sck=ports.sck,
+                copi=ports.copi, cipo=ports.cipo), mode=0)
+        self._ce_iface = GPIOInterface(logger, assembly, ports.ce)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "nRF24L01: " + message, *args)
@@ -227,21 +249,12 @@ class RadioNRF24L01Applet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        # Order matches the pin order, in clockwise direction.
-        access.add_pins_argument(parser, "ce",   default=True, required=True)
-        access.add_pins_argument(parser, "cs",   default=True, required=True)
-        access.add_pins_argument(parser, "sck",  default=True, required=True)
-        access.add_pins_argument(parser, "copi", default=True, required=True)
-        access.add_pins_argument(parser, "cipo", default=True, required=True)
-        access.add_pins_argument(parser, "irq",  default=True)
+        access.add_ports_arguments(parser, RadioNRF24L01Ports)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.nrf24l01_iface = RadioNRF24L01Interface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo, ce=args.ce)
+            ports = self.assembly.add_ports(RadioNRF24L01Ports, args)
+            self.nrf24l01_iface = RadioNRF24L01Interface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

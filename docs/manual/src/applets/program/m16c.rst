@@ -17,4 +17,6 @@ API reference
 
 .. autoexception:: M16CBootloaderError
 
+.. autoclass:: ProgramM16CPorts
+
 .. autoclass:: ProgramM16CInterface

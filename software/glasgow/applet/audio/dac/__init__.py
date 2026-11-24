@@ -9,7 +9,8 @@ from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
 from glasgow.support.endpoint import ServerEndpoint
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -137,13 +138,21 @@ class AudioDACComponent(wiring.Component):
         return m
 
 
+@glasgow_ports
+class AudioDACPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """output power (voltage reference of the outputs)"""
+    o: io.PortLike = GlasgowPin.field(power=supply, width=range(1, 17), default=1)
+    """modulated output; the number of pins sets the oversampling resolution"""
+
+
 class AudioDACInterface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 pins: tuple[GlasgowPin], width: Literal[1, 2], signed: bool):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: AudioDACPorts, *, width: Literal[1, 2], signed: bool):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
-        component = assembly.add_submodule(AudioDACComponent(assembly.add_port(pins, name="dac"),
+        component = assembly.add_submodule(AudioDACComponent(ports.o,
                                                              width=width, signed=signed))
         # The buffer size should be limited to prevent the buffer size growing unboundedly
         # 1e6 was ~arbitrarily chosen
@@ -221,8 +230,7 @@ format=s16le port=12345
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "o", width=range(1, 17), default=1)
+        access.add_ports_arguments(parser, AudioDACPorts)
 
         parser.add_argument(
             "-w", "--width", metavar="WIDTH", type=int, default=1, choices=(1, 2),
@@ -237,8 +245,8 @@ format=s16le port=12345
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.pcm_iface = AudioDACInterface(self.logger, self.assembly, pins=args.o,
+            ports = self.assembly.add_ports(AudioDACPorts, args)
+            self.pcm_iface = AudioDACInterface(self.logger, self.assembly, ports,
                                                width=args.width, signed=args.signed)
 
     @classmethod

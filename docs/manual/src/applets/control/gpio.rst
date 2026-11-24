@@ -17,4 +17,6 @@ API reference
 
 .. autoexception:: GPIOException
 
+.. autoclass:: ControlGPIOPorts
+
 .. autoclass:: GPIOInterface

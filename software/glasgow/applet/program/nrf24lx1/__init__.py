@@ -10,12 +10,14 @@ import enum
 import os
 
 from fx2.format import input_data, output_data
+from amaranth.lib import io
 
 from glasgow.support import logging
 from glasgow.support.logging import dump_hex
-from glasgow.abstract import AbstractAssembly, GlasgowPin, ClockDivisor
+from glasgow.abstract import (AbstractAssembly, GlasgowSupply, GlasgowPin, ClockDivisor,
+    glasgow_ports)
 from glasgow.applet import GlasgowAppletError, GlasgowAppletV2
-from glasgow.applet.interface.spi_controller import SPIControllerInterface
+from glasgow.applet.interface.spi_controller import SPIControllerInterface, SPIControllerPorts
 from glasgow.applet.control.gpio import GPIOInterface
 
 
@@ -77,17 +79,36 @@ class _FlashStatus(enum.IntFlag):
     RDISMB  = 0b00000100
 
 
+@glasgow_ports
+class ProgramNRF24Lx1Ports:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """microcontroller power"""
+    # Order matches the pin order, in clockwise direction.
+    prog: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """programming mode select (PROG)"""
+    sck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    copi: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """controller out, peripheral in"""
+    cipo: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """controller in, peripheral out"""
+    cs: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """chip select"""
+    reset: io.PortLike = GlasgowPin.field(power=supply, default=True, invert=True)
+    """microcontroller reset (active low)"""
+
+
 class ProgramNRF24Lx1Interface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 cs: GlasgowPin, sck: GlasgowPin, copi: GlasgowPin, cipo: GlasgowPin,
-                 prog: GlasgowPin, reset: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: ProgramNRF24Lx1Ports):
         self._logger = logger
         self._level  = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
 
         self._spi_iface = SPIControllerInterface(logger, assembly,
-            cs=cs, sck=sck, copi=copi, cipo=cipo, mode=0)
-        self._prog_iface = GPIOInterface(logger, assembly, pins=(prog,))
-        self._reset_iface = GPIOInterface(logger, assembly, pins=(~reset,))
+            SPIControllerPorts(supply=ports.supply, cs=ports.cs, sck=ports.sck,
+                               copi=ports.copi, cipo=ports.cipo), mode=0)
+        self._prog_iface = GPIOInterface(logger, assembly, ports.prog)
+        self._reset_iface = GPIOInterface(logger, assembly, ports.reset)
 
     def _log(self, message, *args):
         self._logger.log(self._level, "nRF24Lx1: " + message, *args)
@@ -195,21 +216,12 @@ class ProgramNRF24Lx1Applet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        # Order matches the pin order, in clockwise direction.
-        access.add_pins_argument(parser, "prog",  default=True, required=True)
-        access.add_pins_argument(parser, "sck",   default=True, required=True)
-        access.add_pins_argument(parser, "copi",  default=True, required=True)
-        access.add_pins_argument(parser, "cipo",  default=True, required=True)
-        access.add_pins_argument(parser, "cs",    default=True, required=True)
-        access.add_pins_argument(parser, "reset", default=True, required=True)
+        access.add_ports_arguments(parser, ProgramNRF24Lx1Ports)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.nrf24lx1_iface = ProgramNRF24Lx1Interface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, copi=args.copi, cipo=args.cipo,
-                prog=args.prog, reset=args.reset)
+            ports = self.assembly.add_ports(ProgramNRF24Lx1Ports, args)
+            self.nrf24lx1_iface = ProgramNRF24Lx1Interface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_setup_arguments(cls, parser):

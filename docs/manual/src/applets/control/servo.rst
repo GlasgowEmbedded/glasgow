@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.control.servo
 
+.. autoclass:: ControlServoPorts
+
 .. autoclass:: ServoInterface

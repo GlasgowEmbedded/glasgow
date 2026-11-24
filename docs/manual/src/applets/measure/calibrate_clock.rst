@@ -15,4 +15,6 @@ API reference
 
 .. module:: glasgow.applet.measure.calibrate_clock
 
+.. autoclass:: CalibrateClockPorts
+
 .. autoclass:: CalibrateClockInterface

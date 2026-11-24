@@ -1,12 +1,12 @@
 import enum
 from abc import ABCMeta, abstractmethod
 from amaranth import *
-from amaranth.lib import wiring, stream
+from amaranth.lib import wiring, stream, io
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
 from glasgow.gateware.i2c import I2CTarget
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2
 
 
@@ -18,11 +18,21 @@ class Event(enum.IntEnum):
     READ    = 0x50
 
 
+@glasgow_ports
+class I2CTargetPorts:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """bus power"""
+    scl: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """I²C clock"""
+    sda: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """I²C data"""
+
+
 class I2CTargetComponent(wiring.Component):
     i_stream: In(stream.Signature(8))
     o_stream: Out(stream.Signature(8))
 
-    def __init__(self, ports, address):
+    def __init__(self, ports: I2CTargetPorts, address):
         self.ports      = ports
         self.address    = address
         super().__init__()
@@ -122,18 +132,19 @@ class I2CTargetInterface(metaclass=ABCMeta):
     """Software-defined I²C target at a 7-bit *address*.
 
     Subclass this interface and implement all five event callbacks. Construct it with a logger,
-    an assembly, and the ``scl``, ``sda``, and ``address`` keyword arguments inside the assembly's
-    ``add_applet()`` context. Call :meth:`read_event` repeatedly to process transactions.
+    an assembly, an :py:`I2CTargetPorts`, and the ``address`` keyword argument inside the
+    assembly's ``add_applet()`` context. Call :meth:`read_event` repeatedly to process
+    transactions.
+
+    The interface does not enable pull-ups; to use the integrated ones, declare ``pull="high"``
+    on the pins, or use :meth:`AbstractAssembly.use_pulls`.
 
     An applet subclass can set ``I2CTargetApplet.interface_cls`` to its custom interface class
     to reuse the applet's argument parsing and event loop.
     """
 
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 scl: GlasgowPin, sda: GlasgowPin, address: int, pulls: bool = False):
-        ports = assembly.add_port_group(scl=scl, sda=sda)
-        if pulls:
-            assembly.use_pulls({scl: "high", sda: "high"})
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: I2CTargetPorts, *, address: int):
         component = assembly.add_submodule(I2CTargetComponent(ports, address))
         self._pipe = assembly.add_inout_pipe(component.o_stream, component.i_stream,
             in_flush=C(1))
@@ -241,10 +252,7 @@ class I2CTargetApplet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        access.add_pins_argument(parser, "scl", default=True, required=True)
-        access.add_pins_argument(parser, "sda", default=True, required=True)
+        access.add_ports_arguments(parser, I2CTargetPorts)
 
         def i2c_address(arg):
             return int(arg, 0)
@@ -258,9 +266,11 @@ class I2CTargetApplet(GlasgowAppletV2):
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.i2c_iface = self.interface_cls(self.logger, self.assembly,
-                scl=args.scl, sda=args.sda, address=args.address, pulls=args.pulls)
+            ports = self.assembly.add_ports(I2CTargetPorts, args)
+            if args.pulls:
+                self.assembly.use_pulls({args.scl: "high", args.sda: "high"})
+            self.i2c_iface = self.interface_cls(self.logger, self.assembly, ports,
+                address=args.address)
 
     async def run(self, args):
         while True:

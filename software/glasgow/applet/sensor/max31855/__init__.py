@@ -5,10 +5,13 @@ import enum
 import asyncio
 from dataclasses import dataclass
 
+from amaranth.lib import io
+
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2
-from glasgow.applet.interface.spi_controller import SPIControllerInterface, SPIControllerApplet
+from glasgow.applet.interface.spi_controller import (SPIControllerInterface, SPIControllerPorts,
+    SPIControllerApplet)
 from glasgow.support.data_logger import DataLogger
 
 
@@ -65,6 +68,18 @@ class SensorMAX31855Interface:
         return MAX31855Sample(value=(data_word >> 18) * 0.25, fault=fault)
 
 
+@glasgow_ports
+class SensorMAX31855Ports:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """sensor power"""
+    cs: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """chip select"""
+    sck: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial clock"""
+    so: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """serial data output"""
+
+
 class SensorMAX31855Applet(GlasgowAppletV2):
     logger = logging.getLogger(__name__)
     help = "measure temperature with Analog Devices MAX31855"
@@ -78,17 +93,14 @@ class SensorMAX31855Applet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-
-        access.add_pins_argument(parser, "cs",  default=True, required=True)
-        access.add_pins_argument(parser, "sck", default=True, required=True)
-        access.add_pins_argument(parser, "so",  default=True, required=True)
+        access.add_ports_arguments(parser, SensorMAX31855Ports)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
+            ports = self.assembly.add_ports(SensorMAX31855Ports, args)
             self.spi_iface = SPIControllerInterface(self.logger, self.assembly,
-                cs=args.cs, sck=args.sck, cipo=args.so, mode=0)
+                SPIControllerPorts(supply=ports.supply, cs=ports.cs, sck=ports.sck,
+                                   copi=None, cipo=ports.so), mode=0)
             self.max31855_iface = SensorMAX31855Interface(self.logger, self.assembly,
                 spi_iface=self.spi_iface, spi_chip=0)
 

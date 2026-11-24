@@ -8,7 +8,7 @@ from amaranth.lib import wiring, io, cdc
 from amaranth.lib.wiring import In, Out
 
 from glasgow.support import logging
-from glasgow.abstract import AbstractAssembly, GlasgowPin
+from glasgow.abstract import AbstractAssembly, GlasgowSupply, GlasgowPin, glasgow_ports
 from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 from glasgow.support.data_logger import DataLogger
 
@@ -20,13 +20,23 @@ class SensorHCSR04Error(GlasgowAppletError):
     pass
 
 
+@glasgow_ports
+class SensorHCSR04Ports:
+    supply: GlasgowSupply = GlasgowSupply.field()
+    """sensor power"""
+    trig: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """trigger output"""
+    echo: io.PortLike = GlasgowPin.field(power=supply, default=True)
+    """echo input"""
+
+
 class SensorHCSR04Component(wiring.Component):
     start:        In(1)
     supersample:  In(3)
     done:         Out(1)
     distance:     Out(32)
 
-    def __init__(self, ports, us_cycles):
+    def __init__(self, ports: SensorHCSR04Ports, us_cycles):
         self._ports     = ports
         self._us_cycles = us_cycles
 
@@ -108,13 +118,12 @@ class SensorHCSR04Component(wiring.Component):
 
 
 class SensorHCSR04Interface:
-    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly, *,
-                 trig: GlasgowPin, echo: GlasgowPin):
+    def __init__(self, logger: logging.Logger, assembly: AbstractAssembly,
+                 ports: SensorHCSR04Ports):
         self._logger   = logger
         self._level    = logging.DEBUG if self._logger.name == __name__ else logging.TRACE
         self._assembly = assembly
 
-        ports = assembly.add_port_group(trig=trig, echo=echo)
         component = assembly.add_submodule(SensorHCSR04Component(ports,
             us_cycles=round(1e-6 / assembly.sys_clk_period)))
 
@@ -168,15 +177,12 @@ class SensorHCSR04Applet(GlasgowAppletV2):
 
     @classmethod
     def add_build_arguments(cls, parser, access):
-        access.add_voltage_argument(parser)
-        access.add_pins_argument(parser, "trig", required=True, default=True)
-        access.add_pins_argument(parser, "echo", required=True, default=True)
+        access.add_ports_arguments(parser, SensorHCSR04Ports)
 
     def build(self, args):
         with self.assembly.add_applet(self):
-            self.assembly.use_voltage(args.voltage)
-            self.hcsr04_iface = SensorHCSR04Interface(self.logger, self.assembly,
-                                                      trig=args.trig, echo=args.echo)
+            ports = self.assembly.add_ports(SensorHCSR04Ports, args)
+            self.hcsr04_iface = SensorHCSR04Interface(self.logger, self.assembly, ports)
 
     @classmethod
     def add_run_arguments(cls, parser):
