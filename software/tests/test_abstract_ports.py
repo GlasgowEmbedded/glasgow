@@ -5,7 +5,8 @@ import unittest
 from dataclasses import dataclass
 from types import SimpleNamespace
 
-from amaranth.lib import io
+from amaranth import Signal
+from amaranth.lib import io, stream
 
 from glasgow.support import logging
 from glasgow.abstract import *
@@ -371,6 +372,8 @@ class FakeDevice:
     async def set_voltage(self, spec, value):
         self.calls.append(("set", spec, value))
 
+    all_ports = "ABCD"
+
 
 class SenseRangeTestCase(unittest.TestCase):
     def configure(self, device, pin="B"):
@@ -403,6 +406,16 @@ class SenseRangeTestCase(unittest.TestCase):
         with self.assertLogs(assembly_module.logger, "WARNING"):
             asyncio.run(assembly.configure_ports())
 
+    def test_follow_sense_on_all_ports(self):
+        device = FakeDevice({"A": 3.3})
+        assembly = HardwareAssembly(revision="C3")
+        assembly._running = True
+        assembly._device = device
+        with assembly.add_applet(SimpleNamespace(logger=logging.getLogger("test"))):
+            assembly.set_port_voltage(GlasgowPort.ALL, GlasgowVio(sense="A"), limits=(3.0, 3.6))
+        asyncio.run(assembly.configure_ports())
+        self.assertEqual(device.calls, [("measure", "A"), ("mirror", "ABCD", "A")])
+
     def test_within_margin(self):
         self.configure(FakeDevice({"A": 3.35}))
 
@@ -417,3 +430,143 @@ class SenseRangeTestCase(unittest.TestCase):
         with self.assertRaisesRegex(VoltageConflictError, "0.00 V"):
             self.configure(device)
         self.assertEqual(device.calls, [("measure", "A")])
+
+
+class InputValidationTestCase(unittest.TestCase):
+    def test_pin_all_port(self):
+        with self.assertRaisesRegex(ValueError, "cannot identify a pin"):
+            GlasgowPin(GlasgowPort.ALL, 0)
+        self.assertEqual(GlasgowPin("A", 3), GlasgowPin(GlasgowPort.A, 3))
+
+    def test_pin_without_legacy_number(self):
+        with self.assertRaisesRegex(ValueError, "legacy number"):
+            _ = GlasgowPin(GlasgowPort.SYN, 0)._legacy_number
+
+    def test_analog_all_port(self):
+        with self.assertRaisesRegex(ValueError, "cannot identify an analog channel"):
+            GlasgowAnalog(GlasgowPort.ALL, GlasgowAnalog.Nodes.Differential)
+
+    def test_clock_divisor_round_mode(self):
+        with self.assertRaisesRegex(ValueError, "round_mode"):
+            ClockDivisor(logging.getLogger("test"), None, ref_period=1e-6, tolerance=0.01,
+                         round_mode="ceil", name="test")
+
+    def test_use_voltage(self):
+        assembly = RecordingAssembly()
+        assembly.use_voltage({"A": 3, "B": 1.8, GlasgowPort.C: GlasgowVio(sense="A")})
+        self.assertEqual(assembly.voltages, [
+            (GlasgowPort.A, GlasgowVio(3.0), None),
+            (GlasgowPort.B, GlasgowVio(1.8), None),
+            (GlasgowPort.C, GlasgowVio(sense=GlasgowPort.A), None),
+        ])
+
+    def test_use_voltage_invalid(self):
+        assembly = RecordingAssembly()
+        for bad in ("3.3", None, True, [3.3]):
+            with self.assertRaisesRegex(TypeError, "cannot use"):
+                assembly.use_voltage({"A": bad})
+        with self.assertRaises(ValueError):
+            assembly.use_voltage({"Q": 3.3})
+        self.assertEqual(assembly.voltages, [])
+
+    def test_use_pulls(self):
+        assembly = RecordingAssembly()
+        pin = GlasgowPin(GlasgowPort.B, 0)
+        assembly.use_pulls({"A0:1": "high", pin: PullState.Low, (pin, ~pin): "float"})
+        self.assertEqual(assembly.pulls, [
+            ("A0", PullState.High), ("A1", PullState.High), ("B0", PullState.Low),
+            ("B0", PullState.Float), ("B0#", PullState.Float),
+        ])
+
+    def test_use_pulls_invalid(self):
+        assembly = RecordingAssembly()
+        pin = GlasgowPin(GlasgowPort.A, 0)
+        with self.assertRaisesRegex(TypeError, "selection of pins"):
+            assembly.use_pulls({42: "high"})
+        with self.assertRaisesRegex(TypeError, "selection of pins"):
+            assembly.use_pulls({(pin, "A1"): "high"})
+        with self.assertRaisesRegex(TypeError, "pull state"):
+            assembly.use_pulls({pin: 1})
+        with self.assertRaises(ValueError):
+            assembly.use_pulls({pin: "sideways"})
+        self.assertEqual(assembly.pulls, [])
+
+    def test_add_port(self):
+        assembly = RecordingAssembly()
+        port = io.SimulationPort("io", 2, name="p")
+        self.assertIs(assembly.add_port(port, "x"), port)
+        self.assertIsNone(assembly.add_port(None, "x"))
+        self.assertIsNone(assembly.add_port("NC", "x"))
+        with self.assertRaisesRegex(TypeError, "cannot add a port"):
+            assembly.add_port(object(), "x")
+
+
+class AssemblyErrorsTestCase(unittest.TestCase):
+    def hardware(self, revision="C3"):
+        return HardwareAssembly(revision=revision)
+
+    def applet(self, name="test"):
+        return SimpleNamespace(logger=logging.getLogger(name))
+
+    def test_invalid_revision(self):
+        with self.assertRaisesRegex(AssertionError, "invalid revision"):
+            HardwareAssembly(revision="Z9")
+
+    def test_nested_applet(self):
+        assembly = self.hardware()
+        with assembly.add_applet(self.applet()):
+            with self.assertRaisesRegex(RuntimeError, "nested"):
+                with assembly.add_applet(self.applet()):
+                    pass
+
+    def test_pin_already_used(self):
+        assembly = self.hardware()
+        with assembly.add_applet(self.applet()):
+            assembly.add_port("A0", "x")
+            with self.assertRaisesRegex(ValueError, "unknown or already used pin A0"):
+                assembly.add_port("A0", "y")
+            with self.assertRaisesRegex(ValueError, "unknown or already used pin"):
+                assembly.add_port("B9", "y")
+
+    def test_sealed(self):
+        assembly = self.hardware()
+        assembly._artifact = object()
+        with assembly.add_applet(self.applet()):
+            with self.assertRaisesRegex(AssemblyBuildError, "sealed"):
+                assembly.add_port("A0", "x")
+            with self.assertRaisesRegex(AssemblyBuildError, "sealed"):
+                assembly.add_rw_register(Signal())
+
+    def test_dynamic_memory_limits(self):
+        assembly = self.hardware("D0")
+        with assembly.add_applet(self.applet()):
+            with self.assertRaisesRegex(ValueError, "64 MB"):
+                assembly.add_dynamic_memory(DRAMOptions(size=65 * 0x100000))
+            assembly.add_dynamic_memory()
+            assembly.add_dynamic_memory()
+            with self.assertRaisesRegex(AssemblyBuildError, "two memory channels"):
+                assembly.add_dynamic_memory()
+
+    def test_follow_sense_on_all_ports(self):
+        assembly = self.hardware()
+        with assembly.add_applet(self.applet()):
+            assembly.set_port_voltage(GlasgowPort.ALL, GlasgowVio(sense="A"))
+
+    def test_pipe_arguments(self):
+        for assembly in (self.hardware(), SimulationAssembly()):
+            with assembly.add_applet(self.applet()):
+                pipe = assembly.add_in_pipe(stream.Signature(8).create())
+            with self.assertRaisesRegex(ValueError, "positive"):
+                asyncio.run(pipe.recv(0))
+            with self.assertRaisesRegex(ValueError, "empty"):
+                asyncio.run(pipe.recv_until(b""))
+
+    def test_simulation_pipe_direction(self):
+        assembly = SimulationAssembly()
+        with assembly.add_applet(self.applet()):
+            in_pipe = assembly.add_in_pipe(stream.Signature(8).create())
+            out_pipe = assembly.add_out_pipe(stream.Signature(8).flip().create())
+        with self.assertRaisesRegex(TypeError, "in pipe"):
+            asyncio.run(in_pipe.send(b"x"))
+        with self.assertRaisesRegex(TypeError, "out pipe"):
+            asyncio.run(out_pipe.recv(1))

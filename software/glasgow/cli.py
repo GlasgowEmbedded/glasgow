@@ -22,7 +22,7 @@ from .support import logging
 from .support.asignal import *
 from .support.plugin import PluginRequirementsUnmet, PluginLoadError
 from .support.usb import ErrorDisconnected
-from .abstract import ClockingError, GlasgowPort
+from .abstract import ClockingError, GlasgowPort, VoltageConflictError, AssemblyBuildError
 from .hardware.device import GlasgowDeviceError, GlasgowDevice, GlasgowDeviceConfig
 from .hardware.device import FX2BootloaderDevice, VID_QIHW, PID_GLASGOW
 from .hardware.toolchain import ToolchainNotFound, ToolOutOfDate
@@ -511,7 +511,7 @@ def _applet(assembly, args):
                 with assembly.add_applet(applet):
                     applet.build(target, args)
                 return applet, target
-    except GlasgowAppletError as e:
+    except (GlasgowAppletError, VoltageConflictError, AssemblyBuildError) as e:
         applet.logger.error(e)
         logger.error("failed to build applet %r", args.applet)
         raise SystemExit()

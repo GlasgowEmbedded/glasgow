@@ -177,8 +177,9 @@ class HardwareInPipe(AbstractInPipe):
     def readable(self) -> int:
         return len(self._in_buffer)
 
-    async def recv(self, length) -> memoryview:
-        assert length > 0
+    async def recv(self, length: int) -> memoryview:
+        if length <= 0:
+            raise ValueError(f"length must be positive, not {length}")
 
         # Return exactly the requested length.
         while len(self._in_buffer) < length:
@@ -207,8 +208,9 @@ class HardwareInPipe(AbstractInPipe):
         self._logger.trace(f"IN pipe {self._in_interface}: read <%s>", dump_hex(result))
         return result
 
-    async def recv_until(self, delimiter) -> bytes:
-        assert len(delimiter) >= 1
+    async def recv_until(self, delimiter: bytes) -> bytes:
+        if len(delimiter) < 1:
+            raise ValueError("delimiter must not be empty")
 
         self._logger.trace(f"IN pipe {self._in_interface}: need <%s> delimiter",
             dump_hex(delimiter))
@@ -237,7 +239,7 @@ class HardwareInPipe(AbstractInPipe):
         await self._stop()
         await self._start()
 
-    async def detach(self) -> tuple[int, None]:
+    async def detach(self) -> tuple[int, int | None]:
         self._logger.trace(f"IN pipe {self._in_interface}: detaching")
         _check_detach()
         await self._stop()
@@ -409,7 +411,7 @@ class HardwareOutPipe(AbstractOutPipe):
         await self._stop()
         await self._start()
 
-    async def detach(self) -> tuple[None, int]:
+    async def detach(self) -> tuple[int | None, int]:
         self._logger.trace(f"OUT pipe {self._out_interface}: detaching")
         _check_detach()
         await self._stop()
@@ -491,7 +493,9 @@ class HardwareAssembly(AbstractAssembly):
             device: GlasgowDevice | None = None,
             revision: str | None = None):
         if device is not None:
-            assert revision is None or revision == device.revision
+            assert revision is None or revision == device.revision, (
+                f"requested revision {revision}, but the device is revision {device.revision}"
+            )
             self._device    = device
             self._revision  = device.revision
         elif revision is not None:
@@ -533,11 +537,12 @@ class HardwareAssembly(AbstractAssembly):
             case "C0" | "C1" | "C2" | "C3" | "D0" | "D1":
                 return 1/48e6
             case _:
-                assert False, f"invalid revision {self._revision}"
+                raise ValueError(f"invalid revision {self._revision!r}")
 
     @contextmanager
     def add_applet(self, applet: Any) -> Generator[None]:
-        assert self._applet is None
+        if self._applet is not None:
+            raise RuntimeError("add_applet() cannot be nested")
 
         self._logger = applet.logger
         self._applet = applet
@@ -552,14 +557,19 @@ class HardwareAssembly(AbstractAssembly):
 
     @property
     def _current_logger(self) -> logging.Logger:
-        assert self._logger is not None
+        if self._logger is None:
+            raise RuntimeError("the assembly has no logger")
         return self._logger
 
+    def _check_unsealed(self, what: str):
+        if self._artifact is not None:
+            raise AssemblyBuildError(f"cannot add {what} to a sealed assembly")
+
     def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
-        assert self._artifact is None, "cannot add a port to a sealed assembly"
-        # TODO: make this a proper error and not an assertion
+        self._check_unsealed("a port")
         pin_name = f"{pin.port}{pin.number}"
-        assert pin_name in self._platform.glasgow_pins, f"unknown or already used pin {pin_name}"
+        if pin_name not in self._platform.glasgow_pins:
+            raise ValueError(f"unknown or already used pin {pin_name}")
         self._current_logger.debug("assigning pin %s to %s%s", port_name, pin_name,
             " (inverted)" if pin.invert else "")
         if (pin.port, pin.number) not in self._pulls:
@@ -568,13 +578,13 @@ class HardwareAssembly(AbstractAssembly):
         return ~port if pin.invert else port
 
     def add_submodule[E: Elaboratable](self, elaboratable: E, *, name: str | None = None) -> E:
-        assert self._artifact is None, "cannot add a submodule to a sealed assembly"
+        self._check_unsealed("a submodule")
         self._modules.append((self._domain, elaboratable, name))
         elaboratable._MustUse__used = True
         return elaboratable
 
     def add_ro_register(self, signal) -> AbstractRORegister:
-        assert self._artifact is None, "cannot add a register to a sealed assembly"
+        self._check_unsealed("a register")
         register = HardwareRORegister(self._current_logger, self,
             address=self._1ST_USER_ADDR + len(self._registers), shape=signal.shape(),
             name=Value.cast(signal).name)
@@ -582,7 +592,7 @@ class HardwareAssembly(AbstractAssembly):
         return register
 
     def add_rw_register(self, signal) -> AbstractRWRegister:
-        assert self._artifact is None, "cannot add a register to a sealed assembly"
+        self._check_unsealed("a register")
         register = HardwareRWRegister(self._current_logger, self,
             address=self._1ST_USER_ADDR + len(self._registers), shape=signal.shape(),
             name=Value.cast(signal).name)
@@ -591,7 +601,7 @@ class HardwareAssembly(AbstractAssembly):
 
     def add_in_pipe(self, in_stream, *, in_flush=C(0),
                     fifo_depth=None, buffer_size=None) -> AbstractInPipe:
-        assert self._artifact is None, "cannot add a pipe to a sealed assembly"
+        self._check_unsealed("a pipe")
         in_pipe = HardwareInPipe(self._current_logger, self, buffer_size=buffer_size)
         self._in_streams.append((self._domain, in_stream, in_flush, fifo_depth))
         self._pipes.append(in_pipe)
@@ -599,7 +609,7 @@ class HardwareAssembly(AbstractAssembly):
 
     def add_out_pipe(self, out_stream, *,
                      fifo_depth=None, buffer_size=None) -> AbstractOutPipe:
-        assert self._artifact is None, "cannot add a pipe to a sealed assembly"
+        self._check_unsealed("a pipe")
         out_pipe = HardwareOutPipe(self._current_logger, self, buffer_size=buffer_size)
         self._out_streams.append((self._domain, out_stream, fifo_depth))
         self._pipes.append(out_pipe)
@@ -608,7 +618,7 @@ class HardwareAssembly(AbstractAssembly):
     def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
                        in_fifo_depth=None, in_buffer_size=None,
                        out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
-        assert self._artifact is None, "cannot add a pipe to a sealed assembly"
+        self._check_unsealed("a pipe")
         inout_pipe = HardwareInOutPipe(self._current_logger, self,
             in_buffer_size=in_buffer_size, out_buffer_size=out_buffer_size)
         self._in_streams.append((self._domain, in_stream, in_flush, in_fifo_depth))
@@ -617,19 +627,23 @@ class HardwareAssembly(AbstractAssembly):
         return inout_pipe
 
     @override
-    def add_dynamic_memory(self, options=DRAMOptions()) -> tuple[octoram.Signature, range]:
-        if options.size is None:
-            options = dataclasses.replace(options, size=64 * 0x100000)
-        assert self._artifact is None, "cannot add a dynamic memory to a sealed assembly"
-        assert self._revision >= "C0", "DRAM is not available prior to revision D0"
-        assert len(self._memories) < 2, "only two memory channels are available"
-        assert options.size <= 64 * 0x100000, "memory size must be no more than 64 MB"
+    def add_dynamic_memory(
+            self, options: DRAMOptions = DRAMOptions()) -> tuple[octoram.Signature, range]:
+        size = 64 * 0x100000 if options.size is None else options.size
+        self._check_unsealed("a dynamic memory")
+        if self._revision < "C0":
+            raise AssemblyBuildError("DRAM is not available prior to revision C0")
+        if len(self._memories) >= 2:
+            raise AssemblyBuildError("only two memory channels are available")
+        if size > 64 * 0x100000:
+            raise ValueError("memory size must be no more than 64 MB")
+        options = dataclasses.replace(options, size=size)
         self._current_logger.debug(f"allocating DRAM channel {len(self._memories)}")
         bus = octoram.Signature().flip().create()
         self._memories.append((self._domain, bus, options))
         # In the future we will likely allow sharing memories; for now this is not available so
         # the entire chip is allocated to one applet.
-        return bus, range(options.size)
+        return bus, range(size)
 
     def add_indicator(self, signal: Signal, *, name: str):
         self._current_logger.info("assigning indicator %r to U%d", name, len(self._indicators) + 1)
@@ -786,7 +800,7 @@ class HardwareAssembly(AbstractAssembly):
                 wiring.connect(m, wiring.flipped(mem_bus), mem_queue.i)
 
         elif self._memories:
-            assert False, "DRAM not available on this hardware revision"
+            raise RuntimeError("DRAM not available on this hardware revision")
 
         m.submodules.fx2_crossbar = fx2_crossbar = FX2Crossbar(fx2_pins)
 
@@ -877,8 +891,8 @@ class HardwareAssembly(AbstractAssembly):
 
     async def configure_ports(self):
         for port, vio, limits in self._voltages:
+            spec = self.device.all_ports if port == GlasgowPort.ALL else str(port)
             if vio.sense is not None:
-                assert port != GlasgowPort.ALL
                 if limits is not None:
                     # Check before mirroring. Once mirrored, the pins are already driven at
                     # whatever voltage is present on the sense input.
@@ -889,11 +903,10 @@ class HardwareAssembly(AbstractAssembly):
                             f"port {port} cannot follow the sense input of port {vio.sense}, "
                             f"which measures {measured:.2f} V: the powered device supports "
                             f"{low:.2f}..{high:.2f} V")
-                sensed = await self.device.mirror_voltage(str(port), str(vio.sense))
+                sensed = await self.device.mirror_voltage(spec, str(vio.sense))
                 logger.info(
                     "port %s voltage set to %.1f V (sensed on port %s)", port, sensed, vio.sense)
             if vio.value is not None:
-                spec = self.device.all_ports if port == GlasgowPort.ALL else str(port)
                 await self.device.set_voltage(spec, vio.value)
                 logger.info("port %s voltage set to %.1f V", port, vio.value)
 
@@ -931,12 +944,13 @@ class HardwareAssembly(AbstractAssembly):
 
     async def start(self, device: GlasgowDevice | None = None, *,
                     reload_bitstream: bool = False, _bitstream_file: BinaryIO | None = None):
-        assert not self._running, "only a stopped assembly can be started"
+        if self._running:
+            raise RuntimeError("only a stopped assembly can be started")
 
         if self._device is None:
             self._device = device
-        elif device is not None:
-            assert self._device == device
+        elif device is not None and self._device != device:
+            raise ValueError("the assembly is already associated with a different device")
         if self._device is None:
             raise RuntimeError("no device provided")
 

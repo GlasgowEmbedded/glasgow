@@ -1,3 +1,14 @@
+"""Backend-independent resources used to build and control applets.
+
+An :class:`AbstractAssembly` connects Amaranth gateware to physical ports, host-accessible
+registers, and bytestream pipes. Applet interfaces allocate these resources when building,
+then use the returned register and pipe objects from asynchronous host code. Hardware and
+simulation assemblies implement the same interface.
+
+The pins of an applet, and the supplies that power them, are declared as a dataclass with
+:func:`glasgow_ports`; see :meth:`AbstractAssembly.add_ports`.
+"""
+
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import (Self, Any, Literal, Union, dataclass_transform, overload,
@@ -13,7 +24,7 @@ import math
 import types
 
 from amaranth import *
-from amaranth.lib import io
+from amaranth.lib import io, stream
 
 from glasgow.support import logging
 from glasgow.gateware.ports import PortGroup
@@ -21,7 +32,7 @@ from glasgow.gateware import octoram
 
 
 __all__ = [
-    "ClockingError", "VoltageConflictError",
+    "ClockingError", "VoltageConflictError", "AssemblyBuildError",
     "PullState", "GlasgowPort", "GlasgowVio", "GlasgowSupply", "GlasgowPin", "GlasgowAnalog",
     "glasgow_ports",
     "AbstractRORegister", "AbstractRWRegister", "ClockDivisor", "DRAMOptions",
@@ -31,15 +42,24 @@ __all__ = [
 
 
 class ClockingError(Exception):
+    """A requested clock frequency cannot be represented by its divisor register."""
+
     pass
 
 
 class PullState(enum.Enum):
+    """Logical pin pull state: floating, high, or low.
+
+    Inverting a state with :py:`~state` exchanges high and low and leaves floating unchanged.
+    :py:`state ^ invert` conditionally inverts it.
+    """
+
     Float = "float"
     High  = "high"
     Low   = "low"
 
     def enabled(self) -> bool:
+        """Return whether this state enables a pull resistor."""
         return self != self.Float
 
     def __invert__(self) -> PullState:
@@ -62,6 +82,12 @@ class PullState(enum.Enum):
 
 
 class GlasgowPort(enum.Enum):
+    """Physical port identifier, or :attr:`ALL` for all supply-capable ports.
+
+    The ports available on a device depend on its hardware revision. :attr:`ALL` is a voltage
+    configuration selector and cannot identify a pin.
+    """
+
     A = "A"
     B = "B"
     C = "C"
@@ -88,6 +114,14 @@ class GlasgowPort(enum.Enum):
 
 @dataclass(frozen=True)
 class GlasgowVio:
+    """Port voltage request, specified in volts or by sensing another port.
+
+    Supply exactly one of :py:`value` and :py:`sense`. For example, :py:`GlasgowVio(3.3)`
+    requests 3.3 V, while :py:`GlasgowVio(sense="A")` requests mirroring port A's voltage.
+    Creating a request does not change the device configuration; pass it to
+    :meth:`AbstractAssembly.set_port_voltage` or :meth:`AbstractAssembly.use_voltage`.
+    """
+
     value: float | None       = None
     sense: GlasgowPort | None = None
 
@@ -100,7 +134,13 @@ class GlasgowVio:
         object.__setattr__(self, "sense", GlasgowPort(sense) if sense is not None else None)
 
     @classmethod
-    def parse(cls, value) -> dict[GlasgowPort, GlasgowVio]:
+    def parse(cls, value: str) -> dict[GlasgowPort, GlasgowVio]:
+        """Parse comma-separated CLI voltage clauses into per-port requests.
+
+        Examples: :py:`"3.3"` or :py:`"*=3.3"` selects all ports; :py:`"AB=3.3"` selects A
+        and B; :py:`"B=SA"` mirrors A onto B. Later clauses replace earlier ones for the same
+        key. Invalid clauses raise :exc:`ValueError`.
+        """
         result = {}
         for clause in value.split(","):
             if m := re.match(r"^(\*=)?([0-9]+(\.[0-9]+)?)$", clause):
@@ -118,12 +158,20 @@ class GlasgowVio:
                 raise ValueError(f"{clause!r} is not a valid voltage argument")
         return result
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.sense is not None:
             return f"S{self.sense}"
-        if self.value is not None:
-            return f"{self.value:.2f}"
-        assert False
+        assert self.value is not None # guaranteed by `__init__`
+        return f"{self.value:.2f}"
+
+
+class AssemblyBuildError(Exception):
+    """Raised when an applet requests something that an assembly cannot provide, such as adding
+    a resource after the assembly has been built, or a resource the hardware revision lacks.
+
+    This is a mistake in the applet or its invocation rather than a bug in the assembly, and it is
+    frequently encountered by people new to writing applets.
+    """
 
 
 class VoltageConflictError(Exception):
@@ -262,18 +310,34 @@ class GlasgowSupply:
 
 @dataclass(frozen=True)
 class GlasgowPin:
+    """Digital pin identifier with optional logical inversion.
+
+    :py:`GlasgowPin(GlasgowPort.A, 3, invert=True)` identifies A3 with inverted polarity.
+    :py:`~pin` toggles inversion. Pin availability is checked by the assembly when allocated.
+
+    To declare the pins of an applet, use :meth:`field` in a dataclass created by
+    :func:`glasgow_ports`.
+    """
+
     port:   GlasgowPort
     number: int
     invert: bool = False
 
-    def __init__(self, port: GlasgowPort, number: int, *, invert=False):
-        assert GlasgowPort(port) != GlasgowPort.ALL
+    def __init__(self, port: GlasgowPort | str, number: int, *, invert: bool = False):
+        if GlasgowPort(port) == GlasgowPort.ALL:
+            raise ValueError("port ALL cannot identify a pin")
         object.__setattr__(self, "port", GlasgowPort(port))
         object.__setattr__(self, "number", int(number))
         object.__setattr__(self, "invert", bool(invert))
 
     @classmethod
-    def parse(cls, value: str) -> tuple[GlasgowPin]:
+    def parse(cls, value: str) -> tuple[GlasgowPin, ...]:
+        """Parse a comma-separated pin list, preserving order.
+
+        Ranges include both endpoints and may descend: :py:`"A3:1"` selects A3, A2, A1.
+        A trailing :py:`"#"` inverts a pin or range. Empty clauses, :py:`"-"`, and :py:`"NC"`
+        select no pins. Invalid clauses raise :exc:`ValueError`.
+        """
         result = []
         for clause in value.split(","):
             if clause.upper() in ("", "-", "NC"):
@@ -357,13 +421,13 @@ class GlasgowPin:
                       None if pull is None else PullState(pull), help)})
 
     @property
-    def _legacy_number(self):
+    def _legacy_number(self) -> int:
         match self.port:
             case GlasgowPort.A: return  0 + self.number
             case GlasgowPort.B: return  8 + self.number
             case GlasgowPort.C: return 16 + self.number
             case GlasgowPort.D: return 24 + self.number
-            case _: assert False
+            case _: raise ValueError(f"pin {self} has no legacy number")
 
     def __invert__(self) -> Self:
         return type(self)(self.port, self.number, invert=not self.invert)
@@ -392,8 +456,9 @@ class GlasgowAnalog:
     nodes:  Nodes = Nodes.Differential
     invert: bool = False
 
-    def __init__(self, port: GlasgowPort, nodes: Nodes, *, invert=False):
-        assert GlasgowPort(port) != GlasgowPort.ALL
+    def __init__(self, port: GlasgowPort | str, nodes: Nodes | str, *, invert: bool = False):
+        if GlasgowPort(port) == GlasgowPort.ALL:
+            raise ValueError("port ALL cannot identify an analog channel")
         object.__setattr__(self, "port", GlasgowPort(port))
         object.__setattr__(self, "nodes", self.Nodes(nodes))
         object.__setattr__(self, "invert", bool(invert))
@@ -403,8 +468,20 @@ class GlasgowAnalog:
     def parse(cls, value: str, *, optional: Literal[True]) -> GlasgowAnalog | None:
         pass
 
+    @overload
     @classmethod
     def parse(cls, value: str, *, optional: Literal[False] = False) -> GlasgowAnalog:
+        pass
+
+    @classmethod
+    def parse(cls, value: str, *, optional: bool = False) -> GlasgowAnalog | None:
+        """Parse an analog channel such as :py:`"AP"`, :py:`"AN#"`, :py:`"BPN"`, or :py:`"BNP"`.
+
+        :py:`"P"` and :py:`"N"` select single-ended measurements; :py:`"PN"` and :py:`"NP"`
+        select differential measurements with opposite polarity. With :py:`optional=True`,
+        an empty string, :py:`"-"`, or :py:`"NC"` returns :py:`None`.
+        Invalid channels raise :exc:`ValueError`.
+        """
         if optional and value.upper() in ("", "-", "NC"):
             return None
         elif m := re.match(r"^([A-Z])([PN])(#)?$", value):
@@ -460,7 +537,7 @@ def glasgow_ports(cls=None, /, **kwargs):
     argument that is rejected is :py:`kw_only=False`.
 
     Its fields are declared with :py:`GlasgowPin.field` and :py:`GlasgowSupply`, and it is
-    consumed by :py:`GlasgowAppletArguments.add_ports_arguments` and
+    consumed by :meth:`~glasgow.applet.GlasgowAppletArguments.add_ports_arguments` and
     :meth:`AbstractAssembly.add_ports`.
 
     Raises
@@ -549,13 +626,21 @@ def _check_supply_range(name: str, spec: _SupplyField | None, supply: GlasgowSup
 
 
 class AbstractRORegister(metaclass=ABCMeta):
+    """Asynchronous host access to a gateware value.
+
+    :py:`await register` is equivalent to :py:`await register.get()`. Values follow the
+    registered signal's shape, including structured values for shape-castable signals.
+    """
+
     @property
     @abstractmethod
     def shape(self) -> Shape:
+        """The registered signal's Amaranth shape or shape-castable object."""
         pass
 
     @abstractmethod
     async def get(self) -> Any:
+        """Read the current gateware value."""
         pass
 
     def __await__(self):
@@ -563,19 +648,32 @@ class AbstractRORegister(metaclass=ABCMeta):
 
 
 class AbstractRWRegister(AbstractRORegister):
+    """Asynchronous host access to a gateware signal that can also be written."""
+
     @abstractmethod
     async def set(self, value: Any):
+        """Write a value compatible with the registered signal's shape."""
         pass
 
 
 class ClockDivisor:
-    # This wrapper assumes the divisor register has no "dead codes", i.e. 0 corresponds to
-    # the output period being the same as the reference period, 1 to reference period divided
-    # by 2, 2 to reference period divided by 3, and so on.
+    """Frequency control for a zero-based integer clock divisor register.
+
+    A register value of :math:`n` gives a period of :math:`(n + 1) T`, where :math:`T` is
+    :py:`ref_period` in seconds. Normally created by :meth:`AbstractAssembly.add_clock_divisor`.
+
+    With :py:`round_mode="floor"`, the divisor is rounded up so that the generated frequency
+    does not exceed the request, except for requests above the reference frequency.
+    With :py:`round_mode="nearest"`, the divisor is rounded to the nearest integer.
+    The reported frequency is rounded to integer hertz (upwards in floor mode).
+    :py:`tolerance` is a relative error threshold for logging a warning, not rejecting a request.
+    """
 
     def __init__(self, logger: logging.Logger, register: AbstractRWRegister, *,
                  ref_period: float, tolerance: float, round_mode: Literal["floor", "nearest"],
                  name: str):
+        if round_mode not in ("floor", "nearest"):
+            raise ValueError(f"round_mode must be 'floor' or 'nearest', not {round_mode!r}")
         self._logger     = logger
         self._register   = register
         self._ref_period = ref_period
@@ -583,17 +681,24 @@ class ClockDivisor:
         self._round_mode = round_mode
         self._name       = name
 
-    def _round(self, value: float):
-        match self._round_mode:
-            case "floor":   return math.ceil(value)
-            case "nearest": return round(value)
-            case _:         assert False
+    def _round(self, value: float) -> int:
+        if self._round_mode == "floor":
+            return math.ceil(value)
+        else:
+            return round(value)
 
     async def get_frequency(self) -> int:
+        """Read the divisor and return the resulting frequency in integer hertz."""
         divisor = await self._register.get()
         return self._round(1 / ((divisor + 1) * self._ref_period))
 
     async def set_frequency(self, requested: int):
+        """Set the divisor for a requested frequency in hertz.
+
+        Raise :exc:`ClockingError` if the request is non-positive or requires a divisor too
+        large for the register. Requests above the reference frequency select divisor zero.
+        Log a warning if the relative error exceeds the configured tolerance.
+        """
         if requested <= 0:
             raise ClockingError(
                 f"requested frequency {requested / 1e3:.3f} kHz for clock {self._name!r} "
@@ -618,6 +723,13 @@ class ClockDivisor:
 
 @dataclass(frozen=True, kw_only=True)
 class DRAMOptions:
+    """Dynamic memory allocation and buffering options.
+
+    :py:`size` is the requested capacity in bytes; :py:`None` selects the backend default.
+    :py:`r_buffer_size` and :py:`w_buffer_size` are read and write queue depths in memory-bus
+    data beats, not bytes. :py:`None` omits the corresponding queue.
+    """
+
     size: int | None = None
 
     r_buffer_size: int | None = None
@@ -625,58 +737,127 @@ class DRAMOptions:
 
 
 class AbstractInPipe(metaclass=ABCMeta):
+    """Byte stream from gateware to the host (USB IN direction).
+
+    Reads consume bytes in order; boundaries between gateware transfers are not preserved.
+    """
+
     @property
     @abstractmethod
     def readable(self) -> int | None:
+        """Number of bytes currently buffered for reading, or :py:`None` if unknown."""
         pass
 
     @abstractmethod
-    async def recv(self, length) -> memoryview:
+    async def recv(self, length: int) -> memoryview:
+        """Wait for and consume exactly :py:`length` bytes.
+
+        Raises
+        ------
+        ValueError
+            If :py:`length` is not positive.
+        """
         pass
 
     @abstractmethod
     async def recv_until(self, delimiter: bytes) -> bytes:
+        """Wait for and consume bytes through the first :py:`delimiter`, including it.
+
+        Raises
+        ------
+        ValueError
+            If :py:`delimiter` is empty.
+        """
         pass
 
     @abstractmethod
     async def reset(self):
+        """Discard pending transfers and reset the pipe.
+
+        On hardware, this also resets the associated applet clock domain.
+        """
         pass
 
     @abstractmethod
-    async def detach(self) -> tuple[int, None]:
+    async def detach(self) -> tuple[int, int | None]:
+        """Release the hardware USB interface and return :py:`(in_interface, None)`.
+
+        The pipe cannot be used afterwards. Unsupported by simulation and on Windows.
+        """
         pass
 
 
 class AbstractOutPipe(metaclass=ABCMeta):
+    """Byte stream from the host to gateware (USB OUT direction).
+
+    Writes may be buffered. Flush pending commands before waiting for a response that depends
+    on them, otherwise a short command may remain in the host buffer indefinitely.
+    """
+
     @property
     @abstractmethod
     def writable(self) -> int | None:
+        """Available output transfer capacity in bytes, or :py:`None` if unbounded or unknown."""
         pass
 
     @abstractmethod
     async def send(self, data: Buffer):
+        """Queue bytes for transmission, waiting for buffer space if necessary.
+
+        Completion does not imply that gateware has received or processed the bytes.
+        Use :meth:`flush` to submit any data remaining in the host buffer.
+        """
         pass
 
     @abstractmethod
     async def flush(self):
+        """Submit buffered bytes and wait for pending transfers to complete.
+
+        This does not acknowledge completion of commands executed by gateware.
+        """
         pass
 
     @abstractmethod
     async def reset(self):
+        """Discard pending transfers and reset the pipe.
+
+        On hardware, this also resets the associated applet clock domain.
+        """
         pass
 
     @abstractmethod
-    async def detach(self) -> tuple[None, int]:
+    async def detach(self) -> tuple[int | None, int]:
+        """Release the hardware USB interface and return :py:`(None, out_interface)`.
+
+        The pipe cannot be used afterwards. Unsupported by simulation and on Windows.
+        """
         pass
 
 
 class AbstractInOutPipe(AbstractInPipe, AbstractOutPipe):
+    """Paired input and output byte streams.
+
+    The two directions have independent buffers. :meth:`reset` resets both directions.
+    """
+
     @abstractmethod
     async def detach(self) -> tuple[int, int]:
+        """Release both hardware USB interfaces and return :py:`(in_interface, out_interface)`.
+
+        The pipe cannot be used afterwards. Unsupported by simulation and on Windows.
+        """
         pass
 
 
 class AbstractAssembly(metaclass=ABCMeta):
+    """Allocate gateware and host resources for applets.
+
+    Resource allocation happens during applet construction, before the assembly is built or
+    started. Allocate resources inside :meth:`add_applet` to associate them with that applet.
+    Submodules use the applet's clock domain, exposed to their gateware as :py:`sync`.
+    Backend-specific assembly classes provide build and execution lifecycle operations.
+    """
+
     DEFAULT_FIFO_DEPTH = 512
 
     # Logger for the applet currently being assembled (if any). For internal use only.
@@ -685,23 +866,41 @@ class AbstractAssembly(metaclass=ABCMeta):
     @property
     @abstractmethod
     def sys_clk_period(self) -> float: # TODO: migrate to `amaranth.hdl.Period`
+        """Applet system clock period in seconds; may differ between hardware and simulation."""
         pass
 
     @contextmanager
     @abstractmethod
     def add_applet(self, applet: Any) -> Generator[None]:
+        """Associate new resources with :py:`applet` and its logger within this context."""
         pass
 
     @abstractmethod
     def add_submodule[E: Elaboratable](self, elaboratable: E, *, name: str | None = None) -> E:
+        """Add an Amaranth elaboratable to the assembly and return it.
+
+        :py:`name` optionally sets its submodule name.
+        """
         pass
 
     @abstractmethod
     def add_platform_pin(self, pin: GlasgowPin, port_name: str) -> io.PortLike:
+        """Allocate a physical pin as an Amaranth I/O port named :py:`port_name`."""
         pass
 
-    def add_port(self, pins: GlasgowPin | tuple[GlasgowPin] | str | None,
+    def add_port(self, pins: GlasgowPin | tuple[GlasgowPin, ...] | str | io.PortLike | None,
             name: str) -> io.PortLike | None:
+        """Allocate an I/O port from a pin, ordered tuple of pins, or CLI pin specification.
+
+        Tuple order determines bit order, starting at bit zero. Pin inversion is applied by
+        the hardware backend. :py:`None` or an empty pin selection returns :py:`None`.
+        An existing Amaranth port is returned unchanged.
+
+        Raises
+        ------
+        TypeError
+            If :py:`pins` is none of the above.
+        """
         match pins:
             case None:
                 return None
@@ -718,12 +917,22 @@ class AbstractAssembly(metaclass=ABCMeta):
                 return port
             case GlasgowPin() as pin:
                 return self.add_platform_pin(pin, name)
-            case (io.SimulationPort() | io.SingleEndedPort()) as port:
+            case io.PortLike() as port:
                 return port
             case _:
                 raise TypeError(f"cannot add a port for object {pins!r}")
 
-    def add_port_group(self, **ports) -> PortGroup:
+    def add_port_group(
+            self, **ports: GlasgowPin | tuple[GlasgowPin, ...] | str | io.PortLike | None
+    ) -> PortGroup:
+        """Allocate named ports using :meth:`add_port`.
+
+        Return a :class:`~glasgow.gateware.ports.PortGroup`.
+
+        Keyword names become attributes of the returned group; optional ports may be :py:`None`.
+        This does not configure supply voltages or pulls; applets should declare a ports class
+        and use :meth:`add_ports` instead, which does.
+        """
         return PortGroup(**{name: self.add_port(pins, name) for name, pins in ports.items()})
 
     def use_supply(self, supply: GlasgowSupply, pins: Iterable[GlasgowPin], *,
@@ -756,8 +965,9 @@ class AbstractAssembly(metaclass=ABCMeta):
         """Create the ports and apply the supply voltages declared by a ports dataclass.
 
         :py:`cls` is a dataclass whose fields are declared with :py:`GlasgowPin.field` and
-        :py:`GlasgowSupply` (see :py:`GlasgowAppletArguments.add_ports_arguments`). :py:`args`
-        provides a value for each field, either as parsed command line arguments or as a mapping:
+        :py:`GlasgowSupply` (see
+        :meth:`~glasgow.applet.GlasgowAppletArguments.add_ports_arguments`). :py:`args` provides a
+        value for each field, either as parsed command line arguments or as a mapping:
         pins as :py:`GlasgowPin` objects, a string, a tuple of pins, or :py:`None` for an optional
         field; supplies as :py:`GlasgowSupply` objects or a string.
 
@@ -784,6 +994,7 @@ class AbstractAssembly(metaclass=ABCMeta):
                 supply = info.fixed
             else:
                 supply = values.get(name)
+                assert info.spec is not None # only a fixed supply has no `_SupplyField`
                 if supply is None:
                     supply = GlasgowSupply(current_max=info.spec.current_max)
                 elif isinstance(supply, str):
@@ -825,52 +1036,97 @@ class AbstractAssembly(metaclass=ABCMeta):
         return cls(**ports, **supplies)
 
     @abstractmethod
-    def add_ro_register(self, signal) -> AbstractRORegister:
+    def add_ro_register(self, signal: Signal) -> AbstractRORegister:
+        """Expose a gateware-driven signal for asynchronous host reads."""
         pass
 
     @abstractmethod
-    def add_rw_register(self, signal) -> AbstractRWRegister:
+    def add_rw_register(self, signal: Signal) -> AbstractRWRegister:
+        """Expose a host-driven signal for asynchronous host reads and writes."""
         pass
 
-    def add_clock_divisor(self, signal, ref_period: float, *, tolerance: float | None = None,
+    def add_clock_divisor(self, signal: Signal, ref_period: float, *,
+            tolerance: float | None = None,
             round_mode: Literal["floor", "nearest"] = "floor", name: str) -> ClockDivisor:
+        """Expose a plain-shaped divisor signal as a :class:`ClockDivisor`.
+
+        :py:`ref_period` is in seconds. :py:`tolerance` defaults to 1% relative frequency
+        error and controls warning logging only. See :class:`ClockDivisor` for rounding rules.
+        :py:`name` identifies the clock in diagnostics.
+        """
         if not isinstance(signal.shape(), Shape):
             raise TypeError(f"signal must have a plain shape, not {signal.shape()!r}")
         if tolerance is None:
             tolerance = 1e-2 # assume the clock doesn't need to be very accurate and 1% is enough
-        assert self._logger is not None
+        if self._logger is None:
+            raise RuntimeError("the assembly has no logger")
         return ClockDivisor(self._logger, self.add_rw_register(signal),
                             ref_period=ref_period, tolerance=tolerance, round_mode=round_mode,
                             name=name)
 
     @abstractmethod
-    def add_in_pipe(self, in_stream, *, in_flush=C(0),
-            fifo_depth=None, buffer_size=None) -> AbstractInPipe:
+    def add_in_pipe(self, in_stream: stream.Interface, *, in_flush: Value = C(0),
+            fifo_depth: int | None = None, buffer_size: int | None = None) -> AbstractInPipe:
+        """Connect an 8-bit gateware producer stream to a host input pipe.
+
+        :py:`in_stream` uses the Amaranth stream handshake in the applet clock domain.
+        Assert :py:`in_flush` to forward a partial input packet promptly.
+        :py:`fifo_depth` is the gateware FIFO depth in bytes: :py:`None` selects
+        :attr:`DEFAULT_FIFO_DEPTH`, and zero omits the FIFO. :py:`buffer_size` is the host
+        buffering threshold in bytes, or :py:`None` for unbounded buffering.
+        Simulation does not model these buffering limits.
+        """
         pass
 
     @abstractmethod
-    def add_out_pipe(self, out_stream, *,
-            fifo_depth=None, buffer_size=None) -> AbstractOutPipe:
+    def add_out_pipe(self, out_stream: stream.Interface, *,
+            fifo_depth: int | None = None, buffer_size: int | None = None) -> AbstractOutPipe:
+        """Connect a host output pipe to an 8-bit gateware consumer stream.
+
+        :py:`out_stream` uses the Amaranth stream handshake in the applet clock domain.
+        :py:`fifo_depth` and :py:`buffer_size` have the same units and defaults as in
+        :meth:`add_in_pipe`, applied to the output direction.
+        """
         pass
 
     @abstractmethod
-    def add_inout_pipe(self, in_stream, out_stream, *, in_flush=C(0),
-            in_fifo_depth=None, in_buffer_size=None,
-            out_fifo_depth=None, out_buffer_size=None) -> AbstractInOutPipe:
+    def add_inout_pipe(self, in_stream: stream.Interface, out_stream: stream.Interface, *,
+            in_flush: Value = C(0),
+            in_fifo_depth: int | None = None, in_buffer_size: int | None = None,
+            out_fifo_depth: int | None = None, out_buffer_size: int | None = None
+    ) -> AbstractInOutPipe:
+        """Connect paired gateware producer and consumer streams to a bidirectional pipe.
+
+        See :meth:`add_in_pipe` and :meth:`add_out_pipe` for stream direction and buffering.
+        The :py:`in_` and :py:`out_` options configure each direction independently;
+        :py:`in_flush` only flushes the gateware-to-host direction.
+        """
         pass
 
     @abstractmethod
-    def add_dynamic_memory(self, options=DRAMOptions()) -> tuple[octoram.Signature, range]:
+    def add_dynamic_memory(
+            self, options: DRAMOptions = DRAMOptions()) -> tuple[octoram.Signature, range]:
+        """Allocate dynamic memory and return its bus interface and byte address range.
+
+        :py:`options` controls capacity and buffering. Availability and allocation limits
+        depend on the backend and hardware revision; on hardware, revision C support is
+        experimental and must be enabled by setting the environment variable
+        :py:`GLASGOW_REVC_DRAM=yes`.
+        """
         pass
 
     @abstractmethod
-    def add_indicator(self, signal: Signal, *, name: str):
+    def add_indicator(self, signal: Signal, *, name: str) -> None:
+        """Drive a user indicator LED from :py:`signal`, identified by :py:`name` in diagnostics."""
         pass
 
     @abstractmethod
     def set_port_voltage(self, port: GlasgowPort, vio: GlasgowVio, *,
-                         limits: tuple[float, float] | None = None):
+                         limits: tuple[float, float] | None = None) -> None:
         """Request the voltage of :py:`port`.
+
+        :py:`port` may be :attr:`GlasgowPort.ALL`, with either a fixed voltage or a sense input to
+        follow; in the latter case every supply-capable port mirrors the sensed voltage.
 
         If :py:`limits` is given, it is the inclusive range of voltages in volts that the pins on
         the port may safely be driven at. A voltage that is only known once the device is
@@ -878,42 +1134,84 @@ class AbstractAssembly(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def set_pin_pull(self, pin: GlasgowPin, state: PullState):
+    def set_pin_pull(self, pin: GlasgowPin, state: PullState) -> None:
+        """Record a logical pin pull state to apply with :meth:`configure_ports`.
+
+        Pin inversion exchanges physical pull-up and pull-down. Hardware support depends
+        on the device revision.
+        """
         pass
 
-    def use_voltage(self, ports: Mapping[GlasgowPort | str, GlasgowVio | float]):
+    def use_voltage(self, ports: Mapping[GlasgowPort | str, GlasgowVio | float]) -> None:
+        """Record a mapping of port identifiers to volts or :class:`GlasgowVio` requests.
+
+        For example: :py:`assembly.use_voltage({"A": 3.3, "B": GlasgowVio(sense="A")})`.
+        Applets that declare a ports class do not need this; :meth:`add_ports` requests the
+        voltage of each supply, and diagnoses conflicts.
+
+        Raises
+        ------
+        ValueError
+            If a port identifier is not valid.
+        TypeError
+            If a voltage is neither a :class:`GlasgowVio` nor a number of volts.
+        """
         for port, vio_desc in ports.items():
             port = GlasgowPort(port)
             match vio_desc:
                 case GlasgowVio() as vio:
                     pass
-                case float():
+                case bool():
+                    raise TypeError(f"cannot use {vio_desc!r} as the voltage of port {port}")
+                case int() | float():
                     vio = GlasgowVio(vio_desc)
                 case _:
-                    assert False
+                    raise TypeError(f"cannot use {vio_desc!r} as the voltage of port {port}; "
+                                    f"expected a GlasgowVio or a number of volts")
             self.set_port_voltage(port, vio)
 
-    def use_pulls(self, pulls: Mapping[tuple[GlasgowPin] | GlasgowPin | str, PullState | str]):
+    def use_pulls(self,
+                  pulls: Mapping[tuple[GlasgowPin, ...] | GlasgowPin | str, PullState | str]
+    ) -> None:
+        """Record pulls from a mapping of pin selections to :class:`PullState` or its string value.
+
+        Keys may be individual pins, tuples of pins, or CLI pin specifications.
+        For example: :py:`assembly.use_pulls({"A0:3": "high", "B0": "float"})`.
+
+        Raises
+        ------
+        ValueError
+            If a pin specification or a pull state string is not valid.
+        TypeError
+            If a key is not a pin selection, or a state is not a :class:`PullState` or a string.
+        """
         for pins, state in pulls.items():
             match pins:
                 case tuple():
-                    pass
+                    if not all(isinstance(pin, GlasgowPin) for pin in pins):
+                        raise TypeError(f"cannot use {pins!r} as a selection of pins")
                 case GlasgowPin():
-                    pins = [pins]
+                    pins = (pins,)
                 case str():
                     pins = GlasgowPin.parse(pins)
                 case _:
-                    assert False
+                    raise TypeError(f"cannot use {pins!r} as a selection of pins; expected a "
+                                    f"GlasgowPin, a tuple of pins, or a pin specification")
             match state:
                 case PullState():
                     pass
                 case str():
                     state = PullState(state)
                 case _:
-                    assert False
+                    raise TypeError(f"cannot use {state!r} as a pull state; expected a "
+                                    f"PullState or one of 'float', 'high', 'low'")
             for pin in pins:
                 self.set_pin_pull(pin, state)
 
     @abstractmethod
-    async def configure_ports(self):
+    async def configure_ports(self) -> None:
+        """Apply recorded voltage and pull requests to the device.
+
+        Simulation does not configure physical electrical properties.
+        """
         pass

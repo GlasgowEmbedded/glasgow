@@ -30,8 +30,11 @@ class SimulationPipe(AbstractInOutPipe):
     def readable(self) -> int | None:
         return len(self._i_buffer)
 
-    async def recv(self, length) -> memoryview:
-        assert self._i_buffer is not None, "recv() called on an out pipe"
+    async def recv(self, length: int) -> memoryview:
+        if self._i_buffer is None:
+            raise TypeError("recv() called on an out pipe")
+        if length <= 0:
+            raise ValueError(f"length must be positive, not {length}")
         while len(self._i_buffer) < length:
             _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
@@ -40,8 +43,10 @@ class SimulationPipe(AbstractInOutPipe):
         return memoryview(data)
 
     async def recv_until(self, delimiter: bytes) -> bytes:
-        assert self._i_buffer is not None, "recv_until() called on an out pipe"
-        assert len(delimiter) >= 1
+        if self._i_buffer is None:
+            raise TypeError("recv_until() called on an out pipe")
+        if len(delimiter) < 1:
+            raise ValueError("delimiter must not be empty")
         while delimiter not in self._i_buffer:
             _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
@@ -55,11 +60,13 @@ class SimulationPipe(AbstractInOutPipe):
         return None
 
     async def send(self, data: Buffer):
-        assert self._o_buffer is not None, "send() called on an in pipe"
+        if self._o_buffer is None:
+            raise TypeError("send() called on an in pipe")
         self._o_buffer.extend(data)
 
     async def flush(self, *, _wait=True):
-        assert self._o_buffer is not None, "flush() called on an in pipe"
+        if self._o_buffer is None:
+            raise TypeError("flush() called on an in pipe")
         while len(self._o_buffer) > 0:
             _clk_hit, rst_hit = await self._parent._context.tick()
             assert not rst_hit
@@ -281,7 +288,8 @@ class SimulationAssembly(AbstractAssembly):
             sim.add_testbench(constructor, background=background)
 
         try:
-            assert self.__context is None
+            if self.__context is not None:
+                raise RuntimeError("the simulation is already running")
             if vcd_file:
                 with sim.write_vcd(vcd_file, gtkw_file):
                     sim.run()
