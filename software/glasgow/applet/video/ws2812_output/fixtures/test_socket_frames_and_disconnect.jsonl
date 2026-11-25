@@ -1,0 +1,4 @@
+{"self": "leds_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "616263646566"}], "kwargs": {}, "result": null}
+{"self": "leds_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
+{"self": "leds_iface._pipe", "call": "send", "kind": "asyncmethod", "args": [{"__class__": "bytes", "hex": "313233343536373839303132"}], "kwargs": {}, "result": null}
+{"self": "leds_iface._pipe", "call": "flush", "kind": "asyncmethod", "args": [], "kwargs": {}, "result": null}
