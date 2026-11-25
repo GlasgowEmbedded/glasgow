@@ -147,7 +147,7 @@ class MemoryONFIBus(Elaboratable):
 @glasgow_ports
 class MemoryONFIPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """memory power"""
+    """configure I/O standard and power supply"""
     io: PortLike = GlasgowPin.field(power=supply, width=8, default=True)
     """data bus"""
     cle: PortLike = GlasgowPin.field(power=supply, default=True)

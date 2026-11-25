@@ -330,7 +330,7 @@ class MemoryPROMComponent(wiring.Component):
 @glasgow_ports
 class MemoryPROMPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """memory power"""
+    """configure I/O standard and power supply"""
     dq: io.PortLike = GlasgowPin.field(power=supply, width=range(1, 16), default=8)
     """data lines"""
     a: io.PortLike | None = GlasgowPin.field(power=supply, width=range(1, 24), default=0)

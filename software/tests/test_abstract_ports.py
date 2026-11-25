@@ -11,6 +11,7 @@ from glasgow.support import logging
 from glasgow.abstract import *
 from glasgow.applet import GlasgowAppletArguments
 from glasgow.hardware.assembly import HardwareAssembly
+from glasgow.hardware import assembly as assembly_module
 from glasgow.simulation.assembly import SimulationAssembly
 
 
@@ -361,7 +362,11 @@ class FakeDevice:
 
     async def mirror_voltage(self, port, sense):
         self.calls.append(("mirror", port, sense))
+        self.voltages[port] = self.voltages[sense]
         return self.voltages[sense]
+
+    async def get_voltage(self, port):
+        return self.voltages.get(port, 0.0)
 
     async def set_voltage(self, spec, value):
         self.calls.append(("set", spec, value))
@@ -387,6 +392,16 @@ class SenseRangeTestCase(unittest.TestCase):
         device = FakeDevice({"A": 3.3})
         self.configure(device, pin="A")
         self.assertEqual(device.calls, [("measure", "A"), ("mirror", "A", "A")])
+
+    def test_unpowered_bank_warns(self):
+        device = FakeDevice({"A": 3.3})
+        assembly = HardwareAssembly(revision="C3")
+        assembly._running = True
+        assembly._device = device
+        with assembly.add_applet(SimpleNamespace(logger=logging.getLogger("test"))):
+            assembly.add_ports(I2CPorts, {"scl": "B0", "sda": "B1", "int": None, "supply": None})
+        with self.assertLogs(assembly_module.logger, "WARNING"):
+            asyncio.run(assembly.configure_ports())
 
     def test_within_margin(self):
         self.configure(FakeDevice({"A": 3.35}))

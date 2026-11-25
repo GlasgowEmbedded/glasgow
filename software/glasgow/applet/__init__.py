@@ -307,7 +307,7 @@ class GlasgowAppletArguments:
                     self._arg_error(str(e))
                 return supply
 
-            help = docs.get(name, f"power supply {name!r}")
+            help = docs.get(name, f"I/O standard and power supply {name!r}")
             parser.add_argument(*flags, dest=name, metavar="VOLTS", type=supply_arg, default=None,
                 help=f"{help} (range: {info.spec.voltage_min:g}..{info.spec.voltage_max:g} V, "
                      f"or 'S<port>' to follow the voltage sensed on a port; default: unchanged)")
