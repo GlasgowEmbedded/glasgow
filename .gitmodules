@@ -3,4 +3,4 @@
 	url = https://codeberg.org/GlasgowEmbedded/libfx2
 [submodule "docs/archive"]
 	path = docs/archive
-	url = https://github.com/GlasgowEmbedded/archive
+	url = https://codeberg.org/GlasgowEmbedded/archive

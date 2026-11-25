@@ -326,6 +326,16 @@ class I2CControllerInterface:
             await self._do_addr(address, read=True)
             return await self._do_read(count)
 
+    async def general_call_reset(self):
+        """Broadcast a software reset to all targets that respond to the I²C general call.
+
+        Raises
+        ------
+        I2CNotAcknowledged
+            If the general-call address or the reset byte is not acknowledged.
+        """
+        await self.write(0x00, b"\x06")
+
     async def ping(self, address: int) -> bool:
         """Check address for presence.
 

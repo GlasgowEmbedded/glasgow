@@ -1,0 +1,3 @@
+{"self": "sht4x_iface.i2c_iface", "call": "write", "kind": "asyncmethod", "args": [70, {"__class__": "bytes", "hex": "94"}], "kwargs": {}, "result": null}
+{"self": "sht4x_iface.i2c_iface", "call": "write", "kind": "asyncmethod", "args": [70, {"__class__": "bytes", "hex": "89"}], "kwargs": {}, "result": null}
+{"self": "sht4x_iface.i2c_iface", "call": "read", "kind": "asyncmethod", "args": [70, 6], "kwargs": {}, "result": {"__class__": "bytes", "hex": "00ef6e123437"}}

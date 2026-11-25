@@ -16,7 +16,7 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
 
     simulation_args = ["-f", "50"]
 
-    def prepare_target(self, assembly: SimulationAssembly):
+    def prepare_target(self, assembly: SimulationAssembly, *, address=0x50):
         ctl_ports = PortGroup(
             scl=assembly.get_pin("A0"),
             sda=assembly.get_pin("A1")
@@ -39,7 +39,7 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
         self.i2c_reads  = []
         self.i2c_acks   = []
         async def testbench(ctx):
-            ctx.set(tgt.address, 0x50)
+            ctx.set(tgt.address, address)
             async for _ in ctx.tick():
                 if ctx.get(tgt.start):
                     self.i2c_events.append("S")
@@ -79,6 +79,14 @@ class I2CControllerAppletTestCase(GlasgowAppletV2TestCase, applet=I2CControllerA
         self.i2c_acks = [1, 1, 1]
         await applet.i2c_iface.write(0x50, b"abc")
         self.assertEqual(self.i2c_events, ["S", "W", 97, "W", 98, "W", 99, "P"])
+
+    @applet_v2_simulation_test(
+        prepare=lambda self, assembly: self.prepare_target(assembly, address=0x00),
+        args=simulation_args)
+    async def test_general_call_reset(self, applet: I2CControllerApplet, ctx):
+        self.i2c_acks = [1]
+        await applet.i2c_iface.general_call_reset()
+        self.assertEqual(self.i2c_events, ["S", "W", 0x06, "P"])
 
     @applet_v2_simulation_test(prepare=prepare_target, args=simulation_args)
     async def test_write_nak(self, applet: I2CControllerApplet, ctx):

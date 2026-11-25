@@ -1,0 +1,6 @@
+{"self": "sht4x_iface.i2c_iface", "call": "write", "kind": "asyncmethod", "args": [68, {"__class__": "bytes", "hex": "fd"}], "kwargs": {}, "result": null}
+{"self": "sht4x_iface.i2c_iface", "call": "read", "kind": "asyncmethod", "args": [68, 6], "kwargs": {}, "result": {"__class__": "bytes", "hex": "6666938000a2"}}
+{"self": "sht4x_iface.i2c_iface", "call": "write", "kind": "asyncmethod", "args": [68, {"__class__": "bytes", "hex": "f6"}], "kwargs": {}, "result": null}
+{"self": "sht4x_iface.i2c_iface", "call": "read", "kind": "asyncmethod", "args": [68, 6], "kwargs": {}, "result": {"__class__": "bytes", "hex": "666693000081"}}
+{"self": "sht4x_iface.i2c_iface", "call": "write", "kind": "asyncmethod", "args": [68, {"__class__": "bytes", "hex": "e0"}], "kwargs": {}, "result": null}
+{"self": "sht4x_iface.i2c_iface", "call": "read", "kind": "asyncmethod", "args": [68, 6], "kwargs": {}, "result": {"__class__": "bytes", "hex": "666693ffffac"}}
