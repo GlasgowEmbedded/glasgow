@@ -32,7 +32,7 @@ class Memory25QVerifyError(Memory25QError):
 @glasgow_ports
 class Memory25QPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """memory power"""
+    """configure I/O standard and power supply"""
     cs: PortLike = GlasgowPin.field(power=supply, default=True)
     """chip select"""
     sck: PortLike = GlasgowPin.field(power=supply, default=True)

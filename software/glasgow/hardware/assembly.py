@@ -897,6 +897,12 @@ class HardwareAssembly(AbstractAssembly):
                 await self.device.set_voltage(spec, vio.value)
                 logger.info("port %s voltage set to %.1f V", port, vio.value)
 
+        used_ports = sorted({port for port, _number in self._pulls}, key=str)
+        for port in used_ports:
+            if await self.device.get_voltage(str(port)) == 0.0:
+                logger.warning("port %s is in use but its I/O bank is unpowered; "
+                               "specify a voltage with -V", port)
+
         port_pulls = defaultdict(lambda: (set(), set()))
         for (port, number), state in self._pulls.items():
             low, high = port_pulls[port]
