@@ -169,6 +169,7 @@ sensor-max31855 = "glasgow.applet.sensor.max31855:SensorMAX31855Applet"
 sensor-mouse-ps2 = "glasgow.applet.sensor.mouse_ps2:SensorMousePS2Applet"
 sensor-pmsx003 = "glasgow.applet.sensor.pmsx003:SensorPMSx003Applet"
 sensor-sen5x = "glasgow.applet.sensor.sen5x:SensorSEN5xApplet"
+sensor-sht4x = "glasgow.applet.sensor.sht4x:SensorSHT4xApplet"
 sensor-scd30 = "glasgow.applet.sensor.scd30:SensorSCD30Applet"
 sensor-qmc5883p = "glasgow.applet.sensor.qmc5883p:SensorQMC5883PApplet"
 

@@ -16,4 +16,5 @@ Environment sensing
     pmsx003
     scd30
     sen5x
+    sht4x
     qmc5883p
