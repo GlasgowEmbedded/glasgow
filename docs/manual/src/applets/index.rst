@@ -19,4 +19,5 @@ Applet index
     audio/index
     video/index
     measure/index
+    display/index
     internal/index
