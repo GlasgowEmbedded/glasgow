@@ -72,7 +72,7 @@ class ServoChannel(wiring.Component):
 @glasgow_ports
 class ControlServoPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """servo signal power"""
+    """configure I/O standard and power supply"""
     out: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """control pulse output"""
 

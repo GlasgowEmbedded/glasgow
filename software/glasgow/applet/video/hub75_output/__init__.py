@@ -9,7 +9,7 @@ from glasgow.applet import GlasgowAppletV2, GlasgowAppletError
 @glasgow_ports
 class VideoHub75OutputPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """panel logic power (voltage reference of the outputs)"""
+    """configure I/O standard and power supply"""
     rgb1: io.PortLike = GlasgowPin.field(power=supply, width=3, default="A0:2")
     """color of the upper half of the panel"""
     rgb2: io.PortLike = GlasgowPin.field(power=supply, width=3, default="A3:5")

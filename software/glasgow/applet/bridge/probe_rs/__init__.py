@@ -125,7 +125,7 @@ class ProbeRsRootTarget(wiring.Component):
 @glasgow_ports
 class ProbeRsPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """target power (voltage reference of the interface)"""
+    """configure I/O standard and power supply"""
     swclk: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """serial wire clock"""
     swdio: io.PortLike = GlasgowPin.field(power=supply, default=True)

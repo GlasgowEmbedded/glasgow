@@ -34,7 +34,7 @@ class QSPICommand(enum.Enum, shape=4):
 @glasgow_ports
 class QSPIControllerPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power"""
+    """configure I/O standard and power supply"""
     sck: PortLike = GlasgowPin.field(power=supply, default=True)
     """serial clock"""
     io: PortLike = GlasgowPin.field(power=supply, width=4, default=True, pull="high",

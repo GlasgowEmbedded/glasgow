@@ -123,7 +123,7 @@ class QSPIAnalyzerFrontend(wiring.Component):
 @glasgow_ports
 class QSPIAnalyzerPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power (voltage reference of the inputs)"""
+    """configure I/O standard and power supply"""
     cs: PortLike = GlasgowPin.field(power=supply, default=True, pull="high")
     """chip select"""
     sck: PortLike = GlasgowPin.field(power=supply, default=True)

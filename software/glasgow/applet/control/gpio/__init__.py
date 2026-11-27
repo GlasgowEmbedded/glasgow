@@ -46,7 +46,7 @@ class GPIOComponent(wiring.Component):
 @glasgow_ports
 class ControlGPIOPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """pin power"""
+    """configure I/O standard and power supply"""
     pins: io.PortLike = GlasgowPin.field(power=supply, width=range(1, 33))
     """pins to sample and drive"""
 

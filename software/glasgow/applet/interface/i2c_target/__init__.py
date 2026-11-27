@@ -21,7 +21,7 @@ class Event(enum.IntEnum):
 @glasgow_ports
 class I2CTargetPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power"""
+    """configure I/O standard and power supply"""
     scl: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """I²C clock"""
     sda: io.PortLike = GlasgowPin.field(power=supply, default=True)

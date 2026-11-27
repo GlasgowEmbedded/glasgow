@@ -118,7 +118,7 @@ class SPIAnalyzerFrontend(wiring.Component):
 @glasgow_ports
 class SPIAnalyzerPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power (voltage reference of the inputs)"""
+    """configure I/O standard and power supply"""
     cs: io.PortLike = GlasgowPin.field(power=supply, width=range(1, 257), default=True,
         pull="high")
     """chip selects"""

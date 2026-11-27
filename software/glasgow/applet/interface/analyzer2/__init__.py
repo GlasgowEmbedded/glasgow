@@ -1694,7 +1694,7 @@ class AnalyzerPorts:
     # The probed pins are given as positional arguments (and can be named), so they are not fields.
     # The supply is applied to whichever ports they turn out to be on.
     supply: GlasgowSupply = GlasgowSupply.field()
-    """probe power (voltage reference of the inputs)"""
+    """configure I/O standard and power supply"""
 
 
 class AnalyzerInterface:

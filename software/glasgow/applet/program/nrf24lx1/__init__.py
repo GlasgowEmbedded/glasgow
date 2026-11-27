@@ -82,7 +82,7 @@ class _FlashStatus(enum.IntFlag):
 @glasgow_ports
 class ProgramNRF24Lx1Ports:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """microcontroller power"""
+    """configure I/O standard and power supply"""
     # Order matches the pin order, in clockwise direction.
     prog: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """programming mode select (PROG)"""

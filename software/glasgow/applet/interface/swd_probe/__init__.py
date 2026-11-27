@@ -84,7 +84,7 @@ class SWDResponse(data.Struct):
 @glasgow_ports
 class SWDProbePorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """target power (voltage reference of the interface)"""
+    """configure I/O standard and power supply"""
     swclk: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """serial wire clock"""
     swdio: io.PortLike = GlasgowPin.field(power=supply, default=True)

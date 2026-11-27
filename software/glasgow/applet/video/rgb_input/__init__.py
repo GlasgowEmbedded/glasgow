@@ -157,7 +157,7 @@ class VideoRGBInputRow:
 @glasgow_ports
 class VideoRGBInputPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power (voltage reference of the inputs)"""
+    """configure I/O standard and power supply"""
     r: io.PortLike = GlasgowPin.field(power=supply, width=5)
     """red data lines, from least to most significant bit"""
     g: io.PortLike = GlasgowPin.field(power=supply, width=5)

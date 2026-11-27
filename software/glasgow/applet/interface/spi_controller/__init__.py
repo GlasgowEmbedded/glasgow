@@ -35,7 +35,7 @@ class SPICommand(enum.Enum, shape=4):
 @glasgow_ports
 class SPIControllerPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power"""
+    """configure I/O standard and power supply"""
     cs: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
     """chip select"""
     sck: io.PortLike = GlasgowPin.field(power=supply, default=True)

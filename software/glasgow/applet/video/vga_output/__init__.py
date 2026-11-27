@@ -113,7 +113,7 @@ class VGAOutputGenerator(Elaboratable):
 @glasgow_ports
 class VGAOutputPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """output power (voltage reference of the outputs)"""
+    """configure I/O standard and power supply"""
     hs: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """horizontal sync"""
     vs: io.PortLike = GlasgowPin.field(power=supply, default=True)

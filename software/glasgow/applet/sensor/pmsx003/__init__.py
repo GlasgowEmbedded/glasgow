@@ -73,7 +73,7 @@ class PMSx003Interface:
 @glasgow_ports
 class SensorPMSx003Ports:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """sensor power"""
+    """configure I/O standard and power supply"""
     rx: io.PortLike = GlasgowPin.field(power=supply, default=True, pull="high")
     """receive (data from the sensor)"""
     tx: io.PortLike | None = GlasgowPin.field(power=supply, default=True)
