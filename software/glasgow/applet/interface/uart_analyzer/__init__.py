@@ -91,7 +91,7 @@ class UARTAnalyzerComponent(wiring.Component):
 @glasgow_ports
 class UARTAnalyzerPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power (voltage reference of the inputs)"""
+    """configure I/O standard and power supply"""
     rx: io.PortLike | None = GlasgowPin.field(power=supply, default=True, pull="high")
     """receive channel"""
     tx: io.PortLike | None = GlasgowPin.field(power=supply, default=True, pull="high")

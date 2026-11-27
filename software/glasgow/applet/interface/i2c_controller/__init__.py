@@ -41,7 +41,7 @@ class I2CControllerPorts:
     """
 
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power"""
+    """configure I/O standard and power supply"""
     scl: io.PortLike = GlasgowPin.field(power=supply, default=True, pull="high")
     """I²C clock"""
     sda: io.PortLike = GlasgowPin.field(power=supply, default=True, pull="high")

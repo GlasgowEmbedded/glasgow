@@ -26,7 +26,7 @@ class JTAGPinoutCommand(enum.Enum, shape=8):
 @glasgow_ports
 class JTAGPinoutPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """target power (voltage reference of the interface)"""
+    """configure I/O standard and power supply"""
     pins: io.PortLike = GlasgowPin.field(power=supply, width=range(4, 33))
     """pins to search for a JTAG interface"""
 

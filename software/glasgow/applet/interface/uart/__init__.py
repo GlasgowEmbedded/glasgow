@@ -99,7 +99,7 @@ class UARTAutoBaud(wiring.Component):
 @glasgow_ports
 class UARTPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """device power"""
+    """configure I/O standard and power supply"""
     rx: io.PortLike | None = GlasgowPin.field(power=supply, default=True, pull="high")
     """receive (data from the device)"""
     tx: io.PortLike | None = GlasgowPin.field(power=supply, default=True)

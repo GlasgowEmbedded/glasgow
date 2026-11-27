@@ -142,7 +142,7 @@ class SensorHX711Controller(wiring.Component):
 @glasgow_ports
 class SensorHX711Ports:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """sensor power"""
+    """configure I/O standard and power supply"""
     sck: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """serial clock"""
     din: io.PortLike = GlasgowPin.field(power=supply, default=True)

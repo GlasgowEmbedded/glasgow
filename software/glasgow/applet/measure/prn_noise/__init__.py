@@ -241,7 +241,7 @@ class PRNNoiseInterface:
 @glasgow_ports
 class PRNNoisePorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """output power (voltage reference of the output)"""
+    """configure I/O standard and power supply"""
     out: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """noise output"""
 

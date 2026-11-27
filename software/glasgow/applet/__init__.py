@@ -310,7 +310,7 @@ class GlasgowAppletArguments:
             help = docs.get(name, f"I/O standard and power supply {name!r}")
             parser.add_argument(*flags, dest=name, metavar="VOLTS", type=supply_arg, default=None,
                 help=f"{help} (range: {info.spec.voltage_min:g}..{info.spec.voltage_max:g} V, "
-                     f"or 'S<port>' to follow the voltage sensed on a port; default: unchanged)")
+                     f"or 'S<port>' to use sense pin; default: unchanged)")
 
         for name, info in layout.pins.items():
             spec = info.spec

@@ -36,7 +36,7 @@ class ControlMDIOHeader(data.Struct):
 @glasgow_ports
 class ControlMDIOPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """bus power"""
+    """configure I/O standard and power supply"""
     mdc: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """management data clock"""
     mdio: io.PortLike = GlasgowPin.field(power=supply, default=True, pull="low")

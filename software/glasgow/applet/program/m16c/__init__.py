@@ -77,7 +77,7 @@ class M16CBootloaderError(GlasgowAppletError):
 @glasgow_ports
 class ProgramM16CPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """microcomputer power"""
+    """configure I/O standard and power supply"""
     rx: io.PortLike = GlasgowPin.field(power=supply, default=True, pull="high")
     """receive (data from the microcomputer)"""
     tx: io.PortLike = GlasgowPin.field(power=supply, default=True)

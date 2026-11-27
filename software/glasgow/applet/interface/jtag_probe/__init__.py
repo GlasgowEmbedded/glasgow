@@ -275,7 +275,7 @@ class JTAGProbeDriver(wiring.Component):
 @glasgow_ports
 class JTAGProbePorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """target power (voltage reference of the interface)"""
+    """configure I/O standard and power supply"""
     tck: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """test clock"""
     tms: io.PortLike = GlasgowPin.field(power=supply, default=True)

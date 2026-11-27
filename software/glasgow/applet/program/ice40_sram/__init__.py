@@ -26,7 +26,7 @@ class ICE40SRAMError(GlasgowAppletError):
 @glasgow_ports
 class ICE40SRAMPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """FPGA power"""
+    """configure I/O standard and power supply"""
     cs: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """chip select (SS_B)"""
     sck: io.PortLike = GlasgowPin.field(power=supply, default=True)

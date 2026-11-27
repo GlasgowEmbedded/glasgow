@@ -27,7 +27,7 @@ class RadioNRF24L01Error(GlasgowAppletError):
 @glasgow_ports
 class RadioNRF24L01Ports:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """radio power"""
+    """configure I/O standard and power supply"""
     # Order matches the pin order, in clockwise direction.
     ce: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """chip enable"""

@@ -283,7 +283,7 @@ class SpyBiWireProbeController(wiring.Component):
 @glasgow_ports
 class SpyBiWireProbePorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """target power (voltage reference of the interface)"""
+    """configure I/O standard and power supply"""
     sbwtck: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """SpyBiWire test clock"""
     sbwtdio: io.PortLike = GlasgowPin.field(power=supply, default=True)

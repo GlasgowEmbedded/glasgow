@@ -120,7 +120,7 @@ class CalibrateClockComponent(wiring.Component):
 @glasgow_ports
 class CalibrateClockPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """clock input power (voltage reference of the inputs)"""
+    """configure I/O standard and power supply"""
     ref_pin: io.PortLike = GlasgowPin.field(power=supply,
         help="stable reference clock input pin (e.g. B1 for Rb standard)")
     ext_pin: io.PortLike | None = GlasgowPin.field(power=supply,

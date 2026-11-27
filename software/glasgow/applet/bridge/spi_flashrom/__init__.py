@@ -103,7 +103,7 @@ class SerprogCommandHandler:
 @glasgow_ports
 class SPIFlashromPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """flash chip power"""
+    """configure I/O standard and power supply"""
     cs: io.PortLike = GlasgowPin.field(power=supply, default="A5")
     """chip select"""
     sck: io.PortLike = GlasgowPin.field(power=supply, default="A1")

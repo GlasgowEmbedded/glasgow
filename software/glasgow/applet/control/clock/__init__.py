@@ -13,7 +13,7 @@ __all__ = ["ClockDrivePorts", "ClockDriveInterface"]
 @glasgow_ports
 class ClockDrivePorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """clock receiver power"""
+    """configure I/O standard and power supply"""
     clk: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """clock output"""
 

@@ -141,7 +141,7 @@ class AudioDACComponent(wiring.Component):
 @glasgow_ports
 class AudioDACPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """output power (voltage reference of the outputs)"""
+    """configure I/O standard and power supply"""
     o: io.PortLike = GlasgowPin.field(power=supply, width=range(1, 17), default=1)
     """modulated output; the number of pins sets the oversampling resolution"""
 

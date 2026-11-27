@@ -19,7 +19,7 @@ __all__ = ["ProgramAVRSPIPorts", "ProgramAVRSPIInterface"]
 @glasgow_ports
 class ProgramAVRSPIPorts:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """microcontroller power"""
+    """configure I/O standard and power supply"""
     reset: io.PortLike = GlasgowPin.field(power=supply, default=True, invert=True)
     """microcontroller reset (active low)"""
     sck: io.PortLike = GlasgowPin.field(power=supply, default=True)

@@ -71,7 +71,7 @@ class SensorMAX31855Interface:
 @glasgow_ports
 class SensorMAX31855Ports:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """sensor power"""
+    """configure I/O standard and power supply"""
     cs: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """chip select"""
     sck: io.PortLike = GlasgowPin.field(power=supply, default=True)

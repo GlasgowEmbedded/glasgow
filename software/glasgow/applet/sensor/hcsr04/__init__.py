@@ -23,7 +23,7 @@ class SensorHCSR04Error(GlasgowAppletError):
 @glasgow_ports
 class SensorHCSR04Ports:
     supply: GlasgowSupply = GlasgowSupply.field()
-    """sensor power"""
+    """configure I/O standard and power supply"""
     trig: io.PortLike = GlasgowPin.field(power=supply, default=True)
     """trigger output"""
     echo: io.PortLike = GlasgowPin.field(power=supply, default=True)
